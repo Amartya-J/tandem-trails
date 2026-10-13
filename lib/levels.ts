@@ -17,7 +17,14 @@ const NAMES = [
   ["Above the Bells", "Starfall Steps", "Gale Arcade", "Skyline Finale"],
 ] as const;
 
-export const LEVELS = NAMES.flatMap((names, world) => names.map((name, stage) => ({ name, world, stage, index: world * 4 + stage })));
+const BRIEFINGS = [
+  ["Follow the first lights through the treetops.", "Use the springy mushrooms to cross the wide gaps.", "Keep the crew together beneath the high canopy.", "Gather every light before the forest gate opens."],
+  ["The fairground starts gently. Watch for the gears.", "Time your jumps as the midway turns around you.", "Stay close to your crew through the late-night lights.", "Take one last lap before the great wheel."],
+  ["The reef glows below. Follow the lights across the water.", "Let the current carry you up to the next platform.", "Find a rhythm together through the crossing.", "Bring all four lights to the pearl passage."],
+  ["The sky path begins above the bells.", "Use the updraft to climb toward the stars.", "Keep moving when the wind picks up.", "Reach the final portal together above the clouds."],
+] as const;
+
+export const LEVELS = NAMES.flatMap((names, world) => names.map((name, stage) => ({ name, briefing: BRIEFINGS[world][stage], world, stage, index: world * 4 + stage })));
 export type Platform = { x: number; y: number; w: number; spring: boolean };
 export type Gap = { x: number; w: number };
 export type Shard = { x: number; y: number };

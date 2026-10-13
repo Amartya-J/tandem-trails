@@ -4,7 +4,7 @@ A cooperative browser platformer for **2–4 players**. Cross four worlds, colle
 
 [Play the hosted edition](https://tandem-trails-coop.amar12356.chatgpt.site/)
 
-> GitHub stores the source. The public Sites edition needs a separate deployment, so it may not include the latest visual changes.
+> The illustrated redesign is live at the hosted link above. GitHub stores the source; updating the hosted Sites edition requires a separate deployment.
 
 ## Play together
 
