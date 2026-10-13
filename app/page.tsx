@@ -16,18 +16,29 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 }
 function avatar(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, name: string, local: boolean) {
   ctx.save(); ctx.translate(x, y);
-  ctx.fillStyle = "#182333"; ctx.beginPath(); ctx.ellipse(17, 37, 16, 7, 0, 0, Math.PI * 2); ctx.fill();
-  roundRect(ctx, 4, 4, 28, 33, 13, "#182333"); roundRect(ctx, 7, 6, 22, 26, 10, color);
-  ctx.fillStyle = "#182333"; ctx.beginPath(); ctx.arc(14, 17, 2.3, 0, 7); ctx.arc(23, 17, 2.3, 0, 7); ctx.fill();
-  ctx.strokeStyle = "#182333"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(18, 20, 6, .1, Math.PI - .1); ctx.stroke();
-  roundRect(ctx, 2, 32, 12, 7, 4, "#182333"); roundRect(ctx, 22, 32, 12, 7, 4, "#182333");
-  ctx.font = "700 12px sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = "#152237"; ctx.fillText(local ? "YOU" : name.slice(0, 12), 17, -8);
+  // Cloth hood, ears, scarf and boots make a small, readable woodland explorer.
+  ctx.fillStyle="#071e2480";ctx.beginPath();ctx.ellipse(18,40,21,5,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(4,12);ctx.quadraticCurveTo(-2,-17,8,-10);ctx.lineTo(15,9);ctx.moveTo(21,8);ctx.quadraticCurveTo(32,-18,33,-8);ctx.lineTo(31,16);ctx.fill();
+  ctx.fillStyle="#0d292d";ctx.beginPath();ctx.moveTo(8,17);ctx.lineTo(-1,35);ctx.quadraticCurveTo(16,43,35,33);ctx.lineTo(29,16);ctx.fill();
+  roundRect(ctx,3,2,30,29,13,color);
+  roundRect(ctx,8,10,22,16,8,"#f2dfb9");
+  ctx.fillStyle="#182e30";ctx.beginPath();ctx.ellipse(15,17,2,3.5,0,0,7);ctx.ellipse(24,17,2,3.5,0,0,7);ctx.fill();
+  ctx.fillStyle="#c2826b";ctx.beginPath();ctx.arc(11,21,2,0,7);ctx.arc(28,21,2,0,7);ctx.fill();
+  roundRect(ctx,6,28,25,6,2,"#d88157");ctx.fillStyle="#d88157";ctx.beginPath();ctx.moveTo(7,29);ctx.lineTo(-7,26);ctx.lineTo(-4,33);ctx.lineTo(8,33);ctx.fill();
+  roundRect(ctx,5,35,11,6,2,"#091f25");roundRect(ctx,23,35,11,6,2,"#091f25");
+  roundRect(ctx,26,28,9,10,2,"#99724a");
+  if(name||local){ctx.font="600 10px sans-serif";ctx.textAlign="center";ctx.fillStyle="#eef3d9";ctx.fillText(local?"YOU":name.slice(0,12),18,-19);}
+
   ctx.restore();
 }
 function paint(ctx: CanvasRenderingContext2D, index: number, room: Room | null, hero: Hero, remotes: Map<number, {x:number;y:number}>, time: number) {
   const { level, gaps, platforms, shards, hazards } = layout(index); const world = WORLDS[level.world];
   const w = ctx.canvas.width, h = ctx.canvas.height; const camera = clamp(hero.x - 310, 0, WORLD_WIDTH - w);
-  ctx.clearRect(0, 0, w, h); ctx.fillStyle = world.sky; ctx.fillRect(0, 0, w, h);
+  ctx.clearRect(0, 0, w, h);
+  const sky = ctx.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, world.sky); sky.addColorStop(1, world.far); ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+  const glow = ctx.createRadialGradient(w * .73, 125, 10, w * .73, 125, 220); glow.addColorStop(0, "#e9f2c238"); glow.addColorStop(1, "#e9f2c200"); ctx.fillStyle = glow; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#eef0cc"; ctx.beginPath(); ctx.arc(w * .73, 125, 29, 0, Math.PI * 2); ctx.fill();
+  for(let i=0;i<48;i++){ctx.globalAlpha=.25+(Math.sin(time*.6+i)+1)*.18;ctx.fillStyle=world.accent;ctx.beginPath();ctx.arc(((i*173-camera*.12)%w+w)%w,42+(i*61)%310, i%4===0?1.8:1,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
   ctx.save(); ctx.translate(-camera * .23, 0);
   for (let i = -1; i < 14; i++) {
     const x = i * 250 + (i % 3) * 42;
@@ -68,7 +79,16 @@ function paint(ctx: CanvasRenderingContext2D, index: number, room: Room | null, 
   ctx.save(); ctx.translate(-camera, 0);
   for (let x = 0; x < WORLD_WIDTH; x += 20) if (isGround(x + 10, gaps)) {
     ctx.fillStyle = world.ground; ctx.fillRect(x, FLOOR, 21, h - FLOOR);
-    ctx.fillStyle = world.near; ctx.fillRect(x, FLOOR, 21, 12);
+    ctx.fillStyle = world.near; ctx.fillRect(x, FLOOR, 21, 9);
+    ctx.fillStyle = "#c6e7a54d"; ctx.fillRect(x, FLOOR, 21, 2);
+    ctx.fillStyle = "#00000020"; ctx.fillRect(x + 5, FLOOR + 19 + (x % 3) * 9, 10, 4);
+    ctx.strokeStyle = world.near; ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+6,FLOOR);ctx.lineTo(x+3,FLOOR-7);ctx.moveTo(x+10,FLOOR);ctx.lineTo(x+13,FLOOR-10);ctx.stroke();
+  }
+  // Ground details stay decorative: collision still follows the authored platforms.
+  for(let i=0;i<34;i++){
+    const x=50+i*59;if(!isGround(x,gaps))continue;
+    ctx.strokeStyle=world.near;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,FLOOR);ctx.quadraticCurveTo(x-8,FLOOR-18,x-4,FLOOR-27);ctx.moveTo(x,FLOOR-8);ctx.quadraticCurveTo(x+9,FLOOR-29,x+13,FLOOR-21);ctx.stroke();
+    if(i%3===0){ctx.fillStyle="#b8d0a1";ctx.fillRect(x+19,FLOOR-15,3,15);ctx.fillStyle=level.world===1?"#d69d72":"#88b995";ctx.beginPath();ctx.ellipse(x+20,FLOOR-16,9,5,0,Math.PI,Math.PI*2);ctx.fill();}
   }
   for (const platform of platforms) {
     roundRect(ctx, platform.x, platform.y, platform.w, 18, 8, "#192a3b");
@@ -81,17 +101,17 @@ function paint(ctx: CanvasRenderingContext2D, index: number, room: Room | null, 
   }
   shards.forEach((shard, i) => { if (room && (room.collected & (1 << i))) return;
     const pulse = Math.sin(time * 4 + i) * 3;
-    ctx.save(); ctx.translate(shard.x, shard.y + pulse); ctx.rotate(Math.PI / 4); roundRect(ctx, -13, -13, 26, 26, 5, "#fff"); roundRect(ctx, -9, -9, 18, 18, 3, world.accent); ctx.restore();
+    ctx.save(); ctx.shadowColor=world.accent;ctx.shadowBlur=18; ctx.translate(shard.x, shard.y + pulse); ctx.rotate(Math.PI / 4); roundRect(ctx, -13, -13, 26, 26, 5, "#fff"); roundRect(ctx, -9, -9, 18, 18, 3, world.accent); ctx.restore();
   });
   PLATES.forEach((x, i) => {
     const on = !!room?.gateOpen || !!room?.players.some(p => p.x + 17 > x - 26 && p.x + 17 < x + 26 && p.y > 360);
     roundRect(ctx, x - 26, FLOOR - 8, 52, 8, 3, on ? world.accent : "#b9c2cf");
-    ctx.fillStyle = "#162334"; ctx.font = "700 11px sans-serif"; ctx.textAlign = "center"; ctx.fillText(i === 0 ? "A" : "B", x, FLOOR - 17);
+    ctx.fillStyle = "#e9f0ce"; ctx.font = "700 11px sans-serif"; ctx.textAlign = "center"; ctx.fillText(i === 0 ? "A" : "B", x, FLOOR - 17);
   });
   if (!room?.gateOpen) { roundRect(ctx, 1857, 276, 23, 154, 8, "#182333"); roundRect(ctx, 1862, 282, 13, 138, 6, world.accent); }
   ctx.fillStyle = "#182333"; ctx.beginPath(); ctx.ellipse(EXIT_X, FLOOR - 46, 36, 56, 0, 0, 7); ctx.fill();
   ctx.fillStyle = room?.gateOpen ? "#b6fff2" : "#9ba8bd"; ctx.beginPath(); ctx.ellipse(EXIT_X, FLOOR - 46, 27, 47, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = "#182333"; ctx.font = "800 13px sans-serif"; ctx.textAlign = "center"; ctx.fillText("EXIT", EXIT_X, FLOOR - 114);
+  ctx.fillStyle = "#e9f0ce"; ctx.font = "800 13px sans-serif"; ctx.textAlign = "center"; ctx.fillText("EXIT", EXIT_X, FLOOR - 114);
   if (room) room.players.forEach((player, i) => {
     const local = i === room.meIndex;
     if (local) avatar(ctx, hero.x, hero.y, COLORS[i % COLORS.length], player.name, true);

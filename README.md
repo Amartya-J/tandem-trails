@@ -1,57 +1,91 @@
 # Tandem Trails
 
-**Tandem Trails** is an original cooperative browser platformer for 2–4 people on separate phones or laptops. Create a room, share the six-character code or invite link, and travel through 16 levels in four worlds. No accounts or installs are required.
+A cooperative browser platformer for **2–4 players**. Cross four worlds, collect their lights, and open gates together. Friends can join from separate computers or phones with a room code. No account is required.
 
-**Play:** https://tandem-trails-coop.amar12356.chatgpt.site/
+[Play the hosted edition](https://tandem-trails-coop.amar12356.chatgpt.site/)
 
-## How to play
+> GitHub stores the source. The public Sites edition needs a separate deployment, so it may not include the latest visual changes.
 
-1. One person creates a room. Another person joins using the link or room code. The host starts a level once at least two players are present.
-2. Run with **← / →** or **A / D**, and jump with **↑**, **W**, or **Space**. Phones have on-screen buttons.
-3. Collect all four glowing lights. Two different players must stand on switches **A** and **B** at the same time to open the gate.
-4. Everyone reaches the portal to finish. The host can then pick any unlocked level. If you fall or touch a hazard, you respawn at your most recent checkpoint.
+## Play together
 
-The room shares player positions, lights, gate state, and level progress across devices. You can play from different places. A room supports up to four players.
+1. Enter your name and create a room. Share the invite link or six-character code.
+2. A second player joins. The host chooses an unlocked level and starts.
+3. Collect all four lights, then put two players on switches **A** and **B** at the same time.
+4. Bring everyone through the exit portal. The host can advance to the next level.
 
-## The campaign
+Falls and hazards return you to a checkpoint. The room shares collectibles, gate state and campaign progress. Players control their own movement.
 
-| World | Levels | Distinct feel |
+| Action | Keyboard | Touch |
 | --- | --- | --- |
-| Sunleaf Wilds | First Flight · Mushroom Mile · Canopy Chase · Bloom Gate | Spring platforms and living forest scenery |
-| Brass Carnival | Clockwork Entry · Pinwheel Path · Midnight Midway · The Great Wheel | Moving conveyor section and mechanical fairground |
-| Tideglass Reefs | Glasswater Run · Coral Lift · Current Crossing · Pearl Passage | Gentle low-gravity current and underwater scenery |
-| Cloudspire Sky | Above the Bells · Starfall Steps · Gale Arcade · Skyline Finale | Updraft section and floating skyline |
+| Move | Left / Right or A / D | Arrow buttons |
+| Jump | Space, Up or W | JUMP |
 
-Each level changes the gaps, platforms, hazards, and light positions. The worlds have their own color palettes, backgrounds, and movement effects. This is an original game inspired by the energy and teamwork of side-scrolling platform adventures; it uses no Rayman characters, levels, or assets.
+Landscape gives more room to see the next jump on a phone.
 
-## Build and run locally
+## Four worlds, sixteen levels
 
-Node.js 22.13+ is required.
+| World | Levels | Movement |
+| --- | --- | --- |
+| Sunleaf Wilds | First Flight · Mushroom Mile · Canopy Chase · Bloom Gate | Spring platforms |
+| Brass Carnival | Clockwork Entry · Pinwheel Path · Midnight Midway · The Great Wheel | Conveyor section |
+| Tideglass Reefs | Glasswater Run · Coral Lift · Current Crossing · Pearl Passage | Low-gravity current |
+| Cloudspire Sky | Above the Bells · Starfall Steps · Gale Arcade · Skyline Finale | Updraft section |
+
+Each stage changes the gaps, platforms, hazards and light positions. Canvas artwork gives the worlds separate palettes, with layered scenery and small woodland explorers.
+
+## Run locally
+
+Use **Node.js 22.13 or newer**. The app needs a local Cloudflare Worker and D1 database; opening an HTML file will not run it.
 
 ```sh
-npm ci
-npm run db:generate
+git clone https://github.com/Amartya-J/tandem-trails.git
+cd tandem-trails
+npm run install:ci
 npm run build
 npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_flimsy_sunspot.sql
 npm start
 ```
 
-Open `http://127.0.0.1:8787`. For a two-device local test, both devices must be able to reach the same host; the public URL above is simpler.
+Open **http://127.0.0.1:8787** in two browser profiles to test room creation and joining. The server binds to the local machine. Use the hosted edition to play from separate networks.
 
-## Verification
+For development, `npm run dev` starts the framework's development server. Run `npm run db:generate` when changing the database schema; committed migrations support the setup above.
+
+## Verify changes
 
 ```sh
 npx tsc --noEmit
 npm run lint
 npm run build
-node tests/room-smoke.mjs
-node --experimental-strip-types tests/campaign-smoke.mjs
 ```
 
-The smoke tests expect a running local server. They verify room capacity, host permissions, synchronized collectibles, two-player switches, completion, unlocks, restarts, host transfer, and progression through all 16 levels.
+With the local server and database running:
 
-## How it works
+```sh
+npm run test:smoke
+npm run test:campaign
+```
 
-The game uses React and Canvas for smooth local movement and touch controls. A Cloudflare Worker API stores room and player state in D1. Clients poll for shared state and send position updates, so players can join from different networks and see each other in the same room. Room codes are generated server-side, and a device-specific token identifies each player without a login.
+The API tests create test rooms. They cover room capacity, host permissions, shared lights, paired switches, completion, unlocks, restarts and host transfer. The campaign test traverses all sixteen levels. Point `TRAILS_BASE_URL` at another test server when needed.
 
-The game is hosted with ChatGPT Sites. Site configuration lives in `.openai/hosting.json`; schema migrations live in `drizzle/`. The original source is on this repository's `main` branch.
+## Project structure
+
+| Path | Purpose |
+| --- | --- |
+| `app/page.tsx` | Canvas renderer, player movement, room UI and network client |
+| `app/globals.css` | Layout, controls and responsive styles |
+| `app/api/trails/` | Room operations and multiplayer state |
+| `lib/levels.ts` | World palettes, stage layouts and geometry |
+| `drizzle/` | D1 schema migrations |
+| `scripts/` | Local setup, framework runner and build support |
+| `tests/` | Multiplayer and campaign smoke tests |
+| `.openai/hosting.json` | Sites hosting configuration |
+
+React handles the room interface. The browser draws and moves the local player, sends position updates, and polls the room API for other players. The Worker stores room state in D1. A device token identifies a player without a login.
+
+The repository uses the Vinext build runner with Cloudflare support. Use the checked-in scripts so the build and runtime agree. Multiplayer depends on network latency; this is a cooperative game, not a competitive server-authoritative simulation.
+
+## Deployment
+
+The existing public game runs on ChatGPT Sites. Build output and D1 bindings must travel together when deploying. A static-file host cannot run the room API. Pushing to `main` stores your changes but does not, by itself, publish a new Sites version.
+
+All characters and levels are original. The game has keyboard and touch input. Screen-reader gameplay and broader device testing remain future work.

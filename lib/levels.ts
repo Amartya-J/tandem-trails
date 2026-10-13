@@ -4,10 +4,10 @@ export const PLATES = [1700, 1800] as const;
 export const EXIT_X = 1920;
 
 export const WORLDS = [
-  { name: "Sunleaf Wilds", short: "SUNLEAF", tagline: "A forest that bounces back.", sky: "#b5f5d2", far: "#5bbf89", near: "#207957", ground: "#174a36", accent: "#fff36e", hazard: "thorns" },
-  { name: "Brass Carnival", short: "BRASS", tagline: "Keep time with the turning fair.", sky: "#f5bc88", far: "#cd685d", near: "#7d3958", ground: "#402747", accent: "#ffe07a", hazard: "gears" },
-  { name: "Tideglass Reefs", short: "TIDEGLASS", tagline: "Ride the gentle current.", sky: "#a9e9ee", far: "#5cbfc6", near: "#297b92", ground: "#17475e", accent: "#ffe18a", hazard: "urchins" },
-  { name: "Cloudspire Sky", short: "CLOUDSPIRE", tagline: "Leap into the updraft.", sky: "#b9c9fa", far: "#828de0", near: "#4b5aab", ground: "#263476", accent: "#ffe77a", hazard: "storm orbs" },
+  { name: "Sunleaf Wilds", short: "SUNLEAF", tagline: "A forest that bounces back.", sky: "#153b42", far: "#40776d", near: "#34836b", ground: "#102f30", accent: "#fff36e", hazard: "thorns" },
+  { name: "Brass Carnival", short: "BRASS", tagline: "Keep time with the turning fair.", sky: "#342640", far: "#976775", near: "#aa6b76", ground: "#211e35", accent: "#ffe07a", hazard: "gears" },
+  { name: "Tideglass Reefs", short: "TIDEGLASS", tagline: "Ride the gentle current.", sky: "#133c58", far: "#4188a0", near: "#328e9a", ground: "#112d40", accent: "#ffe18a", hazard: "urchins" },
+  { name: "Cloudspire Sky", short: "CLOUDSPIRE", tagline: "Leap into the updraft.", sky: "#272e58", far: "#767cae", near: "#777db3", ground: "#1c2545", accent: "#ffe77a", hazard: "storm orbs" },
 ] as const;
 
 const NAMES = [
