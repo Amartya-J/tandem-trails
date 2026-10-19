@@ -36,6 +36,19 @@ button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visibl
 .conn-indicator.laggy { color: #ffcf68; background: #39290c88; border: 1px solid #ffcf6844; }
 .audio-toggle-btn { background: #0c2b3d88; border: 1px solid #9fd8c855; color: #e9deb6; border-radius: 12px; padding: 4px 10px; font-size: 9px; font-weight: 800; letter-spacing: 0.8px; }
 .audio-toggle-btn:hover { background: #164856; border-color: #ffe26a; }
+.audio-toggle-btn kbd { margin-left: 4px; color: #9fd8c8; font-size: 8px; }
+.game-menu-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 20px; background: #020b14b8; backdrop-filter: blur(8px); }
+.game-menu { width: min(480px, 100%); max-height: min(90svh, 680px); overflow: auto; border: 1px solid #ffe9a255; border-radius: 20px; background: linear-gradient(160deg, #123747, #071b29); color: #fff4d2; box-shadow: 0 24px 80px #000b; }
+.game-menu-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 15px; }
+.game-menu-heading h2 { margin: 7px 0 0; color: #fff0b5; font: 900 27px/1.1 Georgia, serif; }
+.game-menu .menu { padding: 6px; }
+.game-menu .menu button { color: #d9ead7; }
+.secret-panel { margin-top: 18px; padding-top: 18px; border-top: 1px solid #fff0bd2b; }
+.secret-code-row { display: flex; gap: 8px; margin-top: 9px; }
+.secret-code-row .input { min-width: 0; flex: 1; color: #fff8df; background: #061b29; border-color: #d9efd044; }
+.note-editor { display: grid; gap: 8px; margin-top: 18px; }
+.note-editor .textarea { min-height: 170px; resize: vertical; color: #fff8df; background: #061b29; border-color: #d9efd044; line-height: 1.5; }
+.note-editor small { color: #9fb8ac; font-size: 10px; }
 .pref-toggle-btn { background: #092435; border: 1px solid #73bba655; color: #d7e8db; border-radius: 8px; padding: 2px 7px; font-size: 8px; font-weight: 700; }
 .pref-toggle-btn:hover { background: #123e4f; }
 .rename-btn { background: none; border: none; color: #a2dcd0; font-size: 11px; padding: 2px 6px; cursor: pointer; }

@@ -22,6 +22,8 @@ Falls and hazards return you to a checkpoint. The room shares collectibles, gate
 
 An optional connected gamepad uses the left stick and A/Cross (or the south face button) for movement and jumping. Keyboard and touch controls remain available when the Gamepad API is unsupported.
 
+Press **Esc** or **Menu** during play to open the trail menu. The secret code `pineapplepizza` unlocks a private note editor; notes are saved only in that browser and are never sent to the room. `PLAYER_NOTE.txt` is the starter file for writing a note directly in the project.
+
 Landscape gives more room to see the next jump on a phone.
 
 ## Four worlds, sixteen levels
