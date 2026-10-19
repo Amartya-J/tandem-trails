@@ -236,6 +236,11 @@ export default function Home() {
   const [touchLayout, setTouchLayout] = useState<"standard" | "leftHanded">("standard");
   const [muted, setMuted] = useState(false);
   const [worldTransition, setWorldTransition] = useState<{ world: number; level: number } | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [secretCode, setSecretCode] = useState("");
+  const [secretUnlocked, setSecretUnlocked] = useState(false);
+  const [playerNote, setPlayerNote] = useState("");
+  const [secretError, setSecretError] = useState("");
 
   useEffect(() => { stateRef.current = state; }, [state]);
   useEffect(() => { sessionRef.current = session; }, [session]);
@@ -244,6 +249,38 @@ export default function Home() {
     else sounds.stopWorldMusic();
     return () => sounds.stopWorldMusic();
   }, [state?.phase, state?.level]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        setPlayerNote(localStorage.getItem("tandem-player-note") || "");
+        setSecretUnlocked(localStorage.getItem("tandem-secret-unlocked") === "true");
+      } catch { /* local storage is optional */ }
+    });
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(open => !open);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  const unlockSecret = () => {
+    if (secretCode.trim().toLowerCase() !== "pineapplepizza") {
+      setSecretError("That code does not open this trail.");
+      return;
+    }
+    setSecretUnlocked(true);
+    setSecretError("");
+    try { localStorage.setItem("tandem-secret-unlocked", "true"); } catch { /* optional */ }
+  };
+
+  const updatePlayerNote = (value: string) => {
+    setPlayerNote(value);
+    try { localStorage.setItem("tandem-player-note", value); } catch { /* optional */ }
+  };
 
   useEffect(() => {
     if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js").catch(() => {});
@@ -566,8 +603,24 @@ export default function Home() {
         <button className="audio-toggle-btn" onClick={() => setMuted(sounds.toggleMute())} title={muted ? "Unmute audio" : "Mute audio"}>{muted ? "🔇 SOUND OFF" : "🔊 SOUND ON"}</button>
         <span>4 PAINTED WORLDS</span>
         <strong>2–4 PLAYERS · ONLINE CO-OP</strong>
+        <button className="audio-toggle-btn" onClick={() => setMenuOpen(true)} aria-haspopup="dialog" aria-expanded={menuOpen}>☰ MENU <kbd>Esc</kbd></button>
       </div>
     </header>
+    {menuOpen && <div className="game-menu-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setMenuOpen(false); }}>
+      <section className="game-menu modal-box" role="dialog" aria-modal="true" aria-labelledby="game-menu-title">
+        <div className="game-menu-heading"><div><p className="panel-tag">TRAIL MENU</p><h2 id="game-menu-title">Pause the adventure</h2></div><button className="btn btn-sm btn-ghost" onClick={() => setMenuOpen(false)} aria-label="Close menu">✕</button></div>
+        <ul className="menu menu-vertical bg-base-200/40 rounded-box">
+          <li><button onClick={() => setMenuOpen(false)}>Return to trail</button></li>
+          <li><button onClick={() => { setMenuOpen(false); setMuted(sounds.toggleMute()); }}>{muted ? "Turn sound on" : "Mute sound"}</button></li>
+        </ul>
+        <div className="secret-panel">
+          <label className="panel-tag" htmlFor="secret-code">SECRET TRAIL CODE</label>
+          <div className="secret-code-row"><input className="input input-bordered" id="secret-code" type="password" value={secretCode} onChange={event => setSecretCode(event.target.value)} onKeyDown={event => { if (event.key === "Enter") unlockSecret(); }} placeholder="Enter code" autoComplete="off"/><button className="btn btn-primary" onClick={unlockSecret}>Unlock</button></div>
+          {secretError && <p className="error" role="alert">{secretError}</p>}
+          {secretUnlocked && <div className="note-editor"><label className="panel-tag" htmlFor="player-note">PRIVATE TRAIL NOTE</label><textarea className="textarea textarea-bordered" id="player-note" value={playerNote} onChange={event => updatePlayerNote(event.target.value)} placeholder="Type anything here…"/><small>Saved on this device. It is not sent to the room.</small></div>}
+        </div>
+      </section>
+    </div>}
     <div className="overview"><div className="hero-copy"><p className="eyebrow">AN ORIGINAL CO-OP PLATFORM ADVENTURE</p><h1>Tandem<br/><em>Trails</em><span aria-hidden="true">✦</span></h1><p>Dash through a living storybook.<br/>Nobody gets left behind.</p><div className="hero-chips" aria-label="Game features"><span>16 TRAILS</span><span>4 HEROES</span><span>1 CREW</span></div></div><Image className="cast-art" src="/art/trailblazer-cast.png" width={1918} height={820} priority alt="The four original Tandem Trails adventurers: a rabbit scout, mushroom alchemist, moth glider, and cloud sprite."/></div>
     <div className="main-grid"><section className="stage-card" aria-label="Game stage"><div className="stage-header"><span><i className="status-light"/> {state?.phase === "active" ? "TRAIL IN PROGRESS" : state?.phase === "finished" ? "TRAIL COMPLETE" : "STORYBOOK PREVIEW"}</span><strong>{world.short} <b>·</b> {currentLevel.name.toUpperCase()}</strong></div><div className="canvas-wrap"><canvas ref={canvasRef} width={960} height={540} aria-label={`Side-scrolling platform level: ${currentLevel.name}. Move with arrows or A and D; jump with Space.`}/>{worldTransition && <div className="world-transition" role="status" aria-live="polite"><span className="transition-kicker">WORLD {worldTransition.world + 1} · TRAIL {worldTransition.level + 1}</span><strong>{WORLDS[worldTransition.world].name}</strong><b>{LEVELS[worldTransition.level].name}</b><small>{WORLDS[worldTransition.world].tagline}</small></div>}</div><div className="stage-footer" aria-live="polite"><span>✦ {lightsCollected}/4 LIGHTS</span><span>{state?.gateOpen ? "GATE OPEN · GATHER AT THE PORTAL" : "HOLD SWITCHES A + B TOGETHER"}</span><span>{playersAtPortal}/{portalNeeded} READY · TRAIL {(state?.level ?? selected) + 1}/16</span></div></section>
     <aside className="side-card">
