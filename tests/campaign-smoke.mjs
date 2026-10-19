@@ -11,6 +11,14 @@ async function post(action, session = {}, extra = {}) {
   });
   return { status: response.status, data: await response.json() };
 }
+async function moveGuestTo(session, target) {
+  let position = 80;
+  while (Math.abs(target - position) > 650) {
+    position += Math.sign(target - position) * 650;
+    assert.equal((await post('move', session, { x: position, y: 388 })).status, 200);
+  }
+  assert.equal((await post('move', session, { x: target, y: 388 })).status, 200);
+}
 
 assert.equal(WORLDS.length, 4);
 assert.equal(LEVELS.length, 16);
@@ -34,7 +42,7 @@ for (const level of LEVELS) {
   }
 
   assert.equal((await post('move', host, { x: PLATES[0] - 20, y: 388 })).status, 200);
-  assert.equal((await post('move', guest, { x: PLATES[1] - 20, y: 388 })).status, 200);
+  await moveGuestTo(guest, PLATES[1] - 20);
   assert.equal((await post('move', host, { x: EXIT_X, y: 388 })).status, 200);
   assert.equal((await post('move', guest, { x: EXIT_X, y: 388 })).status, 200);
 

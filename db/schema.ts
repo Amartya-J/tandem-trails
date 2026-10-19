@@ -9,6 +9,8 @@ export const rooms = sqliteTable("trail_rooms", {
   run: integer("run").notNull().default(0),
   collected: integer("collected").notNull().default(0),
   gateOpen: integer("gate_open").notNull().default(0),
+  startedAt: integer("started_at"),
+  falls: integer("falls").notNull().default(0),
   createdAt: integer("created_at").notNull(),
 });
 
@@ -17,6 +19,7 @@ export const players = sqliteTable("trail_players", {
   roomCode: text("room_code").notNull(),
   name: text("name").notNull(),
   joinedAt: integer("joined_at").notNull(),
+  lastSeen: integer("last_seen").notNull().default(0),
   x: real("x").notNull().default(80),
   y: real("y").notNull().default(388),
 }, table => [index("idx_trail_players_room").on(table.roomCode)]);

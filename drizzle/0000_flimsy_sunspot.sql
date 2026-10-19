@@ -3,6 +3,7 @@ CREATE TABLE `trail_players` (
 	`room_code` text NOT NULL,
 	`name` text NOT NULL,
 	`joined_at` integer NOT NULL,
+	`last_seen` integer DEFAULT 0 NOT NULL,
 	`x` real DEFAULT 80 NOT NULL,
 	`y` real DEFAULT 388 NOT NULL
 );
@@ -17,5 +18,7 @@ CREATE TABLE `trail_rooms` (
 	`run` integer DEFAULT 0 NOT NULL,
 	`collected` integer DEFAULT 0 NOT NULL,
 	`gate_open` integer DEFAULT 0 NOT NULL,
+	`started_at` integer,
+	`falls` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL
 );

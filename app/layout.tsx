@@ -2,11 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Tandem Trails — Multiplayer Platform Adventure",
-  description: "Run, leap, and open the way together across 16 original levels in four colorful worlds.",
-  other: {
-    "codex-preview": "development",
-  },
+  title: "Tandem Trails — A Painted Co-op Platform Adventure",
+  description: "Dash through four living storybook worlds with friends. Collect lights, open gates together, and leave nobody behind.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
