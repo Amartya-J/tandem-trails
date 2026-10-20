@@ -1,0 +1,30 @@
+Type your private Tandem Trails note here.
+The Untold Saga of Amartya Jami: Developer, Visionary, Snack Enthusiast
+
+Act I: The Origin Story
+Some people are born into greatness. Others have greatness thrust upon them. Amartya Jami simply opened a code editor one night by complete accident while trying to search for pizza delivery, hit a series of random keys, and accidentally compiled a game engine. Realizing that actual game development was slightly harder than a cosmic coincidence, Amartya embarked on a perilous quest to create the digital masterpiece you are playing right now.
+
+It started with a simple vision: create a game so engaging that players would forget to check their notifications for at least four consecutive minutes. Fueled entirely by cold coffee, midnight existential dread, and an unhealthy quantity of hot chips, Amartya began laying down the foundational code.
+
+Act II: The Development Cycle (Or: How to Fight a Game Engine)
+Developing this game was a smooth, peaceful process where absolutely nothing went wrong. Just kidding. The development timeline was approximately 10% actual game design, 20% staring at a blank screen wondering why the character is falling through the floor, and 70% searching online for why a single misplaced semicolon broke the entire universe.
+
+Throughout this journey, Amartya mastered several critical game development skills:
+
+The Art of the "Feature": If a character suddenly clips through a wall and flies into space, that isn't a bug. That is an interactive commentary on gravity.
+
+Asset Management: Storing 400 different versions of the exact same sound effect labeled sound_final_v2_ACTUAL_FINAL_use_this_one.wav.
+
+Sleep Alternatives: Discovering that if you stare at blue light long enough, your brain simply forgets what nighttime is.
+
+Act III: Life Beyond the Screen
+When Amartya isn't obsessively tweaking hitboxes or re-balancing game mechanics that only cy use people will ever be found engaged in other highly intellectual pursuits. These include arguing with inanimate objects, explaining complex lore to a pet that is visibly trying to leave the room, and spending 45 minutes deciding what to watch on streaming services before giving up and going to sleep.
+
+Amartya’s philosophy on life is straightforward: if at first you don't succeed, lower the difficulty setting. If that still doesn't work, blame the controller.
+
+Act IV: A Personal Note to You, The Player
+Every pixel, every frame, and every questionable design choice in this game was crafted with genuine love, endless patience, and a slight touch of madness. Building this was a wild ride, and having you play it makes every broken line of code completely worth it.
+
+If you genuinely enjoy the game, please tell your friends, your family, and any passing strangers. If you find a game-breaking glitch, just remember: Amartya saw that, left it in on purpose, and is currently judging your inability to overcome the challenge.
+
+Thanks for playing, keep aiming for that high score, and remember to hydrate!
