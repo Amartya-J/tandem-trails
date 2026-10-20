@@ -5,15 +5,23 @@ class SoundManager {
   private ctx: AudioContext | null = null;
   private muted: boolean = false;
   private musicGain: GainNode | null = null;
+  private sfxGain: GainNode | null = null;
   private musicTimer: number | null = null;
   private musicWorld: number | null = null;
   private musicStep = 0;
+  private musicVolume = 0.45;
+  private sfxVolume = 0.8;
 
   constructor() {
     if (typeof window !== "undefined") {
       try {
-        const saved = localStorage.getItem("tandem-audio-muted");
-        this.muted = saved === "true";
+        const savedMute = localStorage.getItem("tandem-audio-muted");
+        const savedMusicVol = localStorage.getItem("tandem-audio-music-vol");
+        const savedSfxVol = localStorage.getItem("tandem-audio-sfx-vol");
+        
+        this.muted = savedMute === "true";
+        if (savedMusicVol) this.musicVolume = parseFloat(savedMusicVol);
+        if (savedSfxVol) this.sfxVolume = parseFloat(savedSfxVol);
       } catch {}
     }
   }
@@ -35,10 +43,19 @@ class SoundManager {
   private ensureMusicGain(ctx: AudioContext): GainNode {
     if (!this.musicGain) {
       this.musicGain = ctx.createGain();
-      this.musicGain.gain.value = this.muted ? 0 : 0.045;
+      this.musicGain.gain.value = this.muted ? 0 : this.musicVolume * 0.1;
       this.musicGain.connect(ctx.destination);
     }
     return this.musicGain;
+  }
+
+  private ensureSfxGain(ctx: AudioContext): GainNode {
+    if (!this.sfxGain) {
+      this.sfxGain = ctx.createGain();
+      this.sfxGain.gain.value = this.muted ? 0 : this.sfxVolume;
+      this.sfxGain.connect(ctx.destination);
+    }
+    return this.sfxGain;
   }
 
   public isMuted(): boolean {
@@ -47,13 +64,41 @@ class SoundManager {
 
   public setMuted(muted: boolean): void {
     this.muted = muted;
-    if (this.musicGain) this.musicGain.gain.setTargetAtTime(muted ? 0 : 0.045, this.ctx?.currentTime ?? 0, 0.03);
+    if (this.musicGain) this.musicGain.gain.setTargetAtTime(muted ? 0 : this.musicVolume * 0.1, this.ctx?.currentTime ?? 0, 0.03);
+    if (this.sfxGain) this.sfxGain.gain.setTargetAtTime(muted ? 0 : this.sfxVolume, this.ctx?.currentTime ?? 0, 0.03);
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem("tandem-audio-muted", String(muted));
       } catch {}
     }
   }
+
+  public setMusicVolume(vol: number): void {
+    this.musicVolume = vol;
+    if (this.musicGain && !this.muted) {
+      this.musicGain.gain.setTargetAtTime(vol * 0.1, this.ctx?.currentTime ?? 0, 0.03);
+    }
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("tandem-audio-music-vol", String(vol));
+      } catch {}
+    }
+  }
+
+  public setSfxVolume(vol: number): void {
+    this.sfxVolume = vol;
+    if (this.sfxGain && !this.muted) {
+      this.sfxGain.gain.setTargetAtTime(vol, this.ctx?.currentTime ?? 0, 0.03);
+    }
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("tandem-audio-sfx-vol", String(vol));
+      } catch {}
+    }
+  }
+
+  public getMusicVolume(): number { return this.musicVolume; }
+  public getSfxVolume(): number { return this.sfxVolume; }
 
   public toggleMute(): boolean {
     this.setMuted(!this.muted);
@@ -117,8 +162,12 @@ class SoundManager {
       gain.gain.setValueAtTime(0.15, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
 
+      osc.connect(this.ensureSfxGain(ctx));
+      gain.connect(ctx.destination); // This was wrong in original, should connect to sfxGain
+
+      // Fixed: connect to sfxGain
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.ensureSfxGain(ctx));
 
       osc.start(now);
       osc.stop(now + 0.15);
@@ -142,7 +191,7 @@ class SoundManager {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.ensureSfxGain(ctx));
 
       osc.start(now);
       osc.stop(now + 0.1);
@@ -167,7 +216,7 @@ class SoundManager {
         gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15);
 
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.ensureSfxGain(ctx));
 
         osc.start(start);
         osc.stop(start + 0.16);
@@ -192,7 +241,7 @@ class SoundManager {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.ensureSfxGain(ctx));
 
       osc.start(now);
       osc.stop(now + 0.22);
@@ -217,7 +266,7 @@ class SoundManager {
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
 
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.ensureSfxGain(ctx));
 
         osc.start(now);
         osc.stop(now + 0.46);
@@ -249,7 +298,7 @@ class SoundManager {
         gain.gain.exponentialRampToValueAtTime(0.001, start + note.d);
 
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.ensureSfxGain(ctx));
 
         osc.start(start);
         osc.stop(start + note.d + 0.05);
@@ -275,7 +324,7 @@ class SoundManager {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.ensureSfxGain(ctx));
 
       osc.start(now);
       osc.stop(now + 0.24);
@@ -299,7 +348,7 @@ class SoundManager {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.ensureSfxGain(ctx));
 
       osc.start(now);
       osc.stop(now + 0.16);
