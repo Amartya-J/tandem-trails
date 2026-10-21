@@ -4,15 +4,15 @@ A small macOS menu bar auto-typer built from this Swift source. It does not use 
 
 ## Build
 
-From any terminal folder, run:
+From the `tandem-trails` repository root, run:
 
 ```sh
-sh "/Users/amartyajami/PycharmProjects/tandem-trails/tools/autokeyer-remake/build.sh"
+sh tools/autokeyer-remake/build.sh
 ```
 
 Or double-click `Build AutoKeyer.command` in this folder. Xcode must be installed. The app is created at `dist/AutoKeyer Remake.app`. Running `sh build.sh` works only after you first change into this folder.
 
-If your PyCharm Terminal is open at the `tandem-trails` project root, the shorter command is `sh tools/autokeyer-remake/build.sh`. The app in `dist` is already built, so rebuilding is optional unless you edit the source.
+The build script skips rebuilding when the source has not changed.
 
 ## Use
 

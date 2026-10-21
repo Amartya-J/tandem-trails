@@ -45,6 +45,7 @@ function avatar(ctx: CanvasRenderingContext2D, x: number, y: number, variant: nu
   ctx.fillStyle = "#061a2b55"; ctx.beginPath(); ctx.ellipse(0, 1 - bob, airborne ? 13 : 19, 4, 0, 0, Math.PI * 2); ctx.fill();
   if (local) { ctx.strokeStyle = "#fff7bbcc"; ctx.lineWidth = 2; ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.arc(0, -23, 27 + Math.sin(time * 4), 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
 
+  // Flowing capes and wings create a strong silhouette even at gameplay scale.
   ctx.fillStyle = palette.dark; ctx.beginPath(); ctx.moveTo(-9, -23); ctx.quadraticCurveTo(-24 - Math.abs(vx) * .025, -13, -21, -1); ctx.quadraticCurveTo(-7, -8, 4, -4); ctx.closePath(); ctx.fill();
   if (variant === 2) { ctx.globalAlpha = .78; ctx.fillStyle = palette.main; ctx.beginPath(); ctx.ellipse(-12, -17, 12, 22, -.55, 0, 7); ctx.ellipse(12, -17, 12, 22, .55, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
   ctx.strokeStyle = palette.dark; ctx.lineWidth = 6; ctx.lineCap = "round";
@@ -104,7 +105,7 @@ function paint(ctx: CanvasRenderingContext2D, index: number, room: Room | null, 
       ctx.fillStyle = "#e4ffff77"; for (let bubble = 0; bubble < 4; bubble++) { ctx.beginPath(); ctx.arc(x + bubble * 25, 330 - bubble * 45 + bob, 5 + bubble * 2, 0, 7); ctx.fill(); }
       ctx.strokeStyle = "#297b9299"; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(x, 430); ctx.bezierCurveTo(x - 35, 320, x + 30, 300, x + 5, 210); ctx.stroke();
     } else {
-      ctx.fillStyle = "#fff9"; for (let star = 0; star < 3; star++) { const sx = x + star * 38, sy = 100 + star * 45 + bob; ctx.beginPath(); ctx.moveTo(sx, sy - 8); ctx.lineTo(sx + 3, sy - 3); ctx.lineTo(sx + 8, sy); ctx.lineTo(sx + 3, sy + 3); ctx.lineTo(sx, sy + 8); ctx.lineTo(sx - 3, sy - 3); ctx.lineTo(sx - 8, sy); ctx.lineTo(sx - 3, sy - 3); ctx.fill(); }
+      ctx.fillStyle = "#fff9"; for (let star = 0; star < 3; star++) { const sx = x + star * 38, sy = 100 + star * 45 + bob; ctx.beginPath(); ctx.moveTo(sx, sy - 8); ctx.lineTo(sx + 3, sy - 3); ctx.lineTo(sx + 8, sy); ctx.lineTo(sx + 3, sy + 3); ctx.lineTo(sx, sy + 8); ctx.lineTo(sx - 3, sy + 3); ctx.lineTo(sx - 8, sy); ctx.lineTo(sx - 3, sy - 3); ctx.fill(); }
       ctx.fillStyle = "#ffffff77"; ctx.beginPath(); ctx.ellipse(x + 40, 360, 80, 19, 0, 0, 7); ctx.fill();
     }
   }
@@ -127,6 +128,7 @@ function paint(ctx: CanvasRenderingContext2D, index: number, room: Room | null, 
     ctx.fillStyle = "#00000020"; ctx.fillRect(x + 5, FLOOR + 19 + (x % 3) * 9, 10, 4);
     ctx.strokeStyle = world.near; ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+6,FLOOR);ctx.lineTo(x+3,FLOOR-7);ctx.moveTo(x+10,FLOOR);ctx.lineTo(x+13,FLOOR-10);ctx.stroke();
   }
+  // Ground details stay decorative: collision still follows the authored platforms.
   for(let i=0;i<34;i++){
     const x=50+i*59;if(!isGround(x,gaps))continue;
     ctx.strokeStyle=world.near;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,FLOOR);ctx.quadraticCurveTo(x-8,FLOOR-18,x-4,FLOOR-27);ctx.moveTo(x,FLOOR-8);ctx.quadraticCurveTo(x+9,FLOOR-29,x+13,FLOOR-21);ctx.stroke();
@@ -171,6 +173,7 @@ function paint(ctx: CanvasRenderingContext2D, index: number, room: Room | null, 
   else avatar(ctx, 96, 388, 0, "", true, time);
   ctx.restore();
 
+  // Off-screen Teammate Radar / Indicators
   if (room && room.phase === "active") {
     room.players.forEach((player, i) => {
       if (i === room.meIndex) return;
@@ -202,6 +205,7 @@ function paint(ctx: CanvasRenderingContext2D, index: number, room: Room | null, 
     });
   }
 
+  // A close foreground frame sells depth without obscuring the collision plane.
   ctx.save(); ctx.globalAlpha = .48; ctx.fillStyle = "#071826";
   ctx.beginPath(); ctx.ellipse(-18, h - 34, 110, 54, -.3, 0, 7); ctx.ellipse(w + 20, h - 26, 135, 62, .25, 0, 7); ctx.fill();
   ctx.strokeStyle = "#0b2230"; ctx.lineWidth = 13; ctx.beginPath(); ctx.moveTo(-12, h); ctx.quadraticCurveTo(35, h - 120, 8, h - 200); ctx.moveTo(w + 10, h); ctx.quadraticCurveTo(w - 50, h - 90, w - 18, h - 160); ctx.stroke(); ctx.restore();
@@ -214,222 +218,286 @@ export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<Room | null>(null); const sessionRef = useRef<Session | null>(null);
   const heroRef = useRef<Hero>(NEW_HERO()); const keysRef = useRef<Set<string>>(new Set()); const touchRef = useRef<Set<string>>(new Set());
-  const cameraRef = useRef(0); const pendingRef = useRef<Set<number>>(new Set()); const finishRef = useRef(false);
-  const [name, setName] = useState(""); const [code, setCode] = useState(""); const [busy, setBusy] = useState(false);
-  const [state, setState] = useState<Room | null>(null); const [selected, setSelected] = useState(0);
-  const [notice, setNotice] = useState(""); const [error, setError] = useState("");
-  const [muted, setMuted] = useState(sounds.isMuted());
+  const remotesRef = useRef<Map<number,{x:number;y:number}>>(new Map()); const pendingRef = useRef<Set<number>>(new Set());
+  const finishRef = useRef(false); const runRef = useRef(-1); const pollingRef = useRef(false);
+  const cameraRef = useRef(0); const failCountRef = useRef(0);
+  const needsReconnectNoticeRef = useRef(false);
+  const previousRoomRef = useRef<{ playerCount: number; collected: number; gateOpen: boolean; hostName: string } | null>(null);
+  const [session, setSession] = useState<Session | null>(null); const [state, setState] = useState<Room | null>(null);
+  const [name, setName] = useState(""); const [code, setCode] = useState(""); const [selected, setSelected] = useState(0);
+  const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [notice, setNotice] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [connState, setConnState] = useState<"connected" | "syncing" | "reconnecting" | "disconnected">("connected");
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [touchLayout, setTouchLayout] = useState<"standard" | "leftHanded">("standard");
+  const [muted, setMuted] = useState(false);
+  const [worldTransition, setWorldTransition] = useState<{ world: number; level: number } | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [musicVol, setMusicVol] = useState(sounds.getMusicVolume());
   const [sfxVol, setSfxVol] = useState(sounds.getSfxVolume());
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [secretCode, setSecretCode] = useState(""); const [secretError, setSecretError] = useState("");
-  const [secretUnlocked, setSecretUnlocked] = useState(false); const [playerNote, setPlayerNote] = useState("");
-  const [editingName, setEditingName] = useState(false); const [newName, setNewName] = useState("");
-  const [copied, setCopied] = useState(false); const [confirmLeave, setConfirmLeave] = useState(false);
-  const [isReady, setIsReady] = useState(false); const [connState, setConnState] = useState("disconnected");
-  const [latencyMs, setLatencyMs] = useState<number | null>(null);
-  const [touchLayout, setTouchLayout] = useState("standard");
-  const [worldTransition, setWorldTransition] = useState<{world:number, level:number} | null>(null);
+  const [secretCode, setSecretCode] = useState("");
+  const [secretError, setSecretError] = useState("");
+  const [secretUnlocked, setSecretUnlocked] = useState(false);
+  const [playerNote, setPlayerNote] = useState("");
 
-  const action = useCallback(async (type: string, payload?: any) => {
-    if (!sessionRef.current) return;
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/trails`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          payload,
-          session: sessionRef.current
-        }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      if (data.room) setState(data.room);
-      if (data.notice) setNotice(data.notice);
-      if (data.error) setError(data.error);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
+  useEffect(() => { stateRef.current = state; }, [state]);
+  useEffect(() => { sessionRef.current = session; }, [session]);
+  useEffect(() => {
+    if (state?.phase === "active") sounds.startWorldMusic(LEVELS[state.level].world);
+    else sounds.stopWorldMusic();
+    return () => sounds.stopWorldMusic();
+  }, [state?.phase, state?.level]);
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js").catch(() => {});
   }, []);
 
-  const enter = async (mode: "create" | "join") => {
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/trails`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: mode === "create" ? "create" : "join",
-          payload: { name, code },
-        }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const { session, room } = await res.json();
-      sessionRef.current = session;
-      localStorage.setItem("tandem-session", JSON.stringify(session));
-      setState(room);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const dropSession = useCallback((message: string) => {
+    clearSavedSession();
+    try { history.replaceState(null, "", location.pathname); } catch { /* ignore */ }
+    setSession(null); sessionRef.current = null;
+    setState(null); stateRef.current = null;
+    runRef.current = -1; failCountRef.current = 0;
+    setConnState("connected");
+    setError(message);
+  }, []);
 
-  const leave = async () => {
-    if (!confirmLeave) { setConfirmLeave(true); setTimeout(() => setConfirmLeave(false), 3000); return; }
-    setBusy(true);
+  const refresh = useCallback(async (current: Session) => {
+    if (pollingRef.current) return; pollingRef.current = true;
     try {
-      await fetch(`/api/trails`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "leave",
-          session: sessionRef.current,
-        }),
-      });
-      sessionRef.current = null;
-      localStorage.removeItem("tandem-session");
-      setState(null);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-      setConfirmLeave(false);
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        needsReconnectNoticeRef.current = true;
+        setConnState("disconnected");
+        return;
+      }
+      const startedAt = performance.now();
+      const response = await fetch(`/api/trails?code=${encodeURIComponent(current.code)}`, { cache: "no-store", headers: { "X-Trail-Token": current.token } });
+      const data = await response.json() as Room & { error?: string };
+      const roundTrip = Math.round(performance.now() - startedAt);
+      if (response.status === 403 || response.status === 404) {
+        dropSession(data.error || "Your session ended. Create or join a room again.");
+        return;
+      }
+      if (!response.ok) throw Error(data.error || "Room unavailable");
+      const recovered = needsReconnectNoticeRef.current;
+      setLatencyMs(roundTrip);
+      setState(data); setError(""); failCountRef.current = 0; needsReconnectNoticeRef.current = false; setConnState("connected");
+      if (recovered) {
+        setNotice("Reconnected to your room");
+        window.setTimeout(() => setNotice(current => current === "Reconnected to your room" ? "" : current), 2800);
+      }
+    } catch (problem) {
+      failCountRef.current += 1;
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        needsReconnectNoticeRef.current = true;
+        setConnState("disconnected");
+      } else if (failCountRef.current >= 3) {
+        needsReconnectNoticeRef.current = true;
+        setConnState("reconnecting");
+      } else setConnState("syncing");
+      setError((problem as Error).message);
     }
-  };
+    finally { pollingRef.current = false; }
+  }, [dropSession]);
 
-  const share = async (type: "link" | "code") => {
-    if (!sessionRef.current || !state) return;
-    const val = type === "link" ? `${window.location.origin}/?room=${sessionRef.current.code}` : sessionRef.current.code;
-    await navigator.clipboard.writeText(val);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  useEffect(() => {
+    queueMicrotask(() => {
+      const invite = new URL(location.href).searchParams.get("room")?.toUpperCase() || "";
+      const savedName = localStorage.getItem("tandem-name") || ""; setName(savedName); setCode(invite);
+      setMuted(sounds.isMuted());
+      setMusicVol(sounds.getMusicVolume());
+      setSfxVol(sounds.getSfxVolume());
+      setPlayerNote(localStorage.getItem("tandem-player-note") || "");
+      try {
+        const savedLayout = localStorage.getItem("tandem-touch-layout");
+        if (savedLayout === "leftHanded" || savedLayout === "standard") setTouchLayout(savedLayout);
+      } catch { /* ignore */ }
+      try {
+        const saved = JSON.parse(localStorage.getItem("tandem-session") || "null") as Session | null;
+        if (saved?.code && saved?.token && (!invite || invite === saved.code)) {
+          setSession(saved);
+          setConnState("syncing");
+        }
+      } catch { clearSavedSession(); }
+    });
+  }, []);
+
+  useEffect(() => {
+    const onMenuKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(open => !open);
+    };
+    window.addEventListener("keydown", onMenuKey);
+    return () => window.removeEventListener("keydown", onMenuKey);
+  }, []);
 
   const unlockSecret = () => {
-    if (secretCode === "TRAILBLAZER") {
+    if (secretCode.trim().toLowerCase() === "pineapplepizza") {
       setSecretUnlocked(true);
       setSecretError("");
-    } else {
-      setSecretError("Incorrect code");
-    }
+    } else setSecretError("That trail code does not open the note.");
   };
 
-  const updatePlayerNote = (val: string) => {
-    setPlayerNote(val);
-    localStorage.setItem("tandem-player-note", val);
+  const updatePlayerNote = (note: string) => {
+    setPlayerNote(note);
+    try { localStorage.setItem("tandem-player-note", note); } catch { /* local notes remain editable */ }
+  };
+
+  useEffect(() => {
+    if (!session) return;
+    queueMicrotask(() => void refresh(session));
+    const timer = setInterval(() => { if (!document.hidden) void refresh(session); }, NETWORK_POLL_MS);
+    return () => clearInterval(timer);
+  }, [session, refresh]);
+
+  useEffect(() => {
+    const goOffline = () => {
+      needsReconnectNoticeRef.current = true;
+      setConnState("disconnected");
+    };
+    const goOnline = () => {
+      const current = sessionRef.current;
+      if (!current) return;
+      needsReconnectNoticeRef.current = true;
+      setConnState("reconnecting");
+      failCountRef.current = 0;
+      void refresh(current);
+    };
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
+    return () => {
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
+    };
+  }, [refresh]);
+
+  useEffect(() => {
+    const resume = () => {
+      if (!document.hidden && sessionRef.current) void refresh(sessionRef.current);
+    };
+    document.addEventListener("visibilitychange", resume);
+    return () => document.removeEventListener("visibilitychange", resume);
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!state) return;
+    const previous = previousRoomRef.current;
+    if (state.phase === "active" && state.run !== runRef.current) {
+      runRef.current = state.run;
+      // Restore the last server position so a refresh mid-level does not snap to spawn.
+      heroRef.current = heroFromPlayer(state.players[state.meIndex]);
+      remotesRef.current.clear(); pendingRef.current.clear(); finishRef.current = false;
+      const worldData = WORLDS[LEVELS[state.level].world];
+      const mechanicHint = state.level === 0 ? "Collect 4 lights & stand on switches A+B" : worldData.tagline;
+      sounds.playNotify();
+      setWorldTransition({ world: LEVELS[state.level].world, level: state.level });
+      window.setTimeout(() => setWorldTransition(current => current?.level === state.level ? null : current), 2600);
+      queueMicrotask(() => setNotice(`LEVEL ${state.level + 1} · ${LEVELS[state.level].name.toUpperCase()} · ${mechanicHint}`));
+    } else if (previous && state.phase === "active") {
+      if (state.playerCount > previous.playerCount) { sounds.playNotify(); queueMicrotask(() => setNotice("A teammate joined the adventure")); }
+      if (state.playerCount < previous.playerCount) { sounds.playNotify(); queueMicrotask(() => setNotice("A teammate left the adventure")); }
+      if (state.collected !== previous.collected && state.collected > previous.collected) {
+        sounds.playCollect();
+        const collectedCount = [0, 1, 2, 3].filter(index => state.collected & (1 << index)).length;
+        queueMicrotask(() => setNotice(`${collectedCount}/4 lights collected`));
+      }
+      if (!previous.gateOpen && state.gateOpen) {
+        sounds.playGate();
+        queueMicrotask(() => setNotice("Gate open · everyone to the portal"));
+      }
+    }
+    const hostName = state.players.find(player => player.isHost)?.name || "";
+    if (previous?.hostName && hostName && previous.hostName !== hostName) {
+      sounds.playNotify();
+      queueMicrotask(() => setNotice(state.isHost ? "You are the new host" : `${hostName} is the new host`));
+    }
+    previousRoomRef.current = {
+      playerCount: state.playerCount,
+      collected: state.collected,
+      gateOpen: state.gateOpen,
+      hostName,
+    };
+    if (state.phase === "finished") { finishRef.current = false; sounds.playComplete(); queueMicrotask(() => setSelected(state.level < 15 ? state.level + 1 : 0)); }
+  }, [state]);
+
+  const action = useCallback(async (kind: string, extra: Record<string, unknown> = {}) => {
+    const current = sessionRef.current;
+    const response = await fetch("/api/trails", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: kind, ...current, ...extra }) });
+    const data = await response.json() as (Room & { error?: string; token?: string; left?: boolean });
+    if (!response.ok) throw Error(data.error || "Please try again");
+    if (data.phase) { setState(data); stateRef.current = data; }
+    return data;
+  }, []);
+
+  const enter = async (kind: "create" | "join") => {
+    if (!name.trim()) { setError("Enter your name first."); return; }
+    setBusy(true); setError("");
+    try { const data = await action(kind, { name: name.trim(), code }); if (!data.token || !data.code) throw Error("Room did not open");
+      const next = { code: data.code, token: data.token }; localStorage.setItem("tandem-session", JSON.stringify(next)); localStorage.setItem("tandem-name", name.trim());
+      history.replaceState(null, "", `?room=${data.code}`); setSession(next); sessionRef.current = next; await refresh(next);
+    } catch (problem) { setError((problem as Error).message); } finally { setBusy(false); }
+  };
+
+  const doAction = async (kind: string, extra: Record<string, unknown> = {}) => { setBusy(true); setError(""); try { await action(kind, extra); } catch (problem) { setError((problem as Error).message); } finally { setBusy(false); } };
+
+  const leave = async () => {
+    if (!confirmLeave) { setConfirmLeave(true); setTimeout(() => setConfirmLeave(false), 4000); return; }
+    try {
+      await action("leave");
+      clearSavedSession();
+      history.replaceState(null, "", location.pathname);
+      setSession(null); sessionRef.current = null;
+      setState(null); stateRef.current = null;
+      setCode(""); runRef.current = -1; setConfirmLeave(false); setConnState("connected");
+    } catch (problem) { setError((problem as Error).message); }
   };
 
   const handleRename = async () => {
     if (!newName.trim()) return;
-    setBusy(true);
+    setBusy(true); setError("");
     try {
-      await fetch(`/api/trails`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "rename",
-          payload: { name: newName },
-          session: sessionRef.current,
-        }),
-      });
+      await action("rename", { name: newName.trim() });
+      localStorage.setItem("tandem-name", newName.trim());
+      setName(newName.trim());
       setEditingName(false);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
+    } catch (problem) { setError((problem as Error).message); }
+    finally { setBusy(false); }
   };
 
-  const doAction = async (type: string, payload?: any) => {
-    setBusy(true);
+  const toggleTouchLayout = () => {
+    const next = touchLayout === "standard" ? "leftHanded" : "standard";
+    setTouchLayout(next);
+    try { localStorage.setItem("tandem-touch-layout", next); } catch {}
+  };
+
+  const share = async (mode: "link" | "code" = "link") => {
+    if (!session) return;
+    const invite = `${location.origin}/?room=${session.code}`;
     try {
-      const res = await fetch(`/api/trails`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          payload,
-          session: sessionRef.current,
-        }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      if (data.room) setState(data.room);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
+      if (mode === "link" && navigator.share) await navigator.share({ title: "Join my Tandem Trails room", text: `Join my Tandem Trails adventure with code ${session.code}.`, url: invite });
+      else await navigator.clipboard.writeText(mode === "code" ? session.code : invite);
+      setCopied(true); setTimeout(() => setCopied(false), 1800);
+    } catch (problem) {
+      if ((problem as Error).name === "AbortError") return;
+      setNotice(`Share room code ${session.code}`);
     }
   };
 
-  const toggleTouchLayout = () => setTouchLayout(prev => prev === "standard" ? "left-handed" : "standard");
-
   useEffect(() => {
-    const poll = async () => {
-      if (!sessionRef.current) return;
-      try {
-        const res = await fetch(`/api/trails`, {
-          method: "POST",
-          headers: { "Content-Hype": "application/json" },
-          body: JSON.stringify({
-            type: "poll",
-            session: sessionRef.current,
-          }),
-        });
-        if (!res.ok) throw new Error(await res.text());
-        const { room, latency } = await res.json();
-        setState(room);
-        setLatencyMs(latency);
-        setConnState("connected");
-      } catch (e) {
-        setConnState("reconnecting");
-      }
-    };
-    const timer = setInterval(poll, NETWORK_POLL_MS);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const savedSession = localStorage.getItem("tandem-session");
-    if (savedSession) {
-      sessionRef.current = JSON.parse(savedSession);
-      void action("poll");
-    }
-    const savedNote = localStorage.getItem("tandem-player-note");
-    if (savedNote) setPlayerNote(savedNote);
-  }, [action]);
-
-  useEffect(() => {
-    if (state && state.phase === "active") {
-      sounds.startWorldMusic(LEVELS[state.level].world);
-    } else {
-      sounds.stopWorldMusic();
-    }
-  }, [state?.phase, state?.level]);
-
-  useEffect(() => {
+    const canvas = canvasRef.current; if (!canvas) return; const ctx = canvas.getContext("2d"); if (!ctx) return;
     const resize = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.dataset.pixelRatio = String(dpr);
-      canvas.width = 960 * dpr;
-      canvas.height = 540 * dpr;
+      const scale = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvas.width = Math.round((innerWidth <= 640 ? 720 : 960) * scale);
+      canvas.height = Math.round(540 * scale);
+      canvas.dataset.pixelRatio = String(scale);
+      canvas.style.aspectRatio = "16 / 9";
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
     };
-    resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
-  }, []);
-
-  useEffect(() => {
-    let frame: number;
-    let last = 0;
-    let lastSend = 0, lastCollect = 0;
+    resize(); window.addEventListener("resize", resize);
+    let frame = 0, last = 0, lastSend = 0, lastCollect = 0;
     const down = (event: KeyboardEvent) => { if (/INPUT|TEXTAREA|SELECT/.test((event.target as HTMLElement).tagName)) return; if (["ArrowLeft","ArrowRight","ArrowUp","Space","KeyA","KeyD","KeyW"].includes(event.code)) { event.preventDefault(); keysRef.current.add(event.code); } };
     const up = (event: KeyboardEvent) => keysRef.current.delete(event.code);
     const blur = () => { keysRef.current.clear(); touchRef.current.clear(); };
@@ -528,36 +596,24 @@ export default function Home() {
         <button className="audio-toggle-btn" onClick={() => setMuted(sounds.toggleMute())} title={muted ? "Unmute audio" : "Mute audio"}>{muted ? "🔇 SOUND OFF" : "🔊 SOUND ON"}</button>
         <span>4 PAINTED WORLDS</span>
         <strong>2–4 PLAYERS · ONLINE CO-OP</strong>
-        <button className="audio-toggle-btn" onClick={() => setMenuOpen(true)} aria-haspopup="dialog" aria-expanded={menuOpen}>☰ MENU <kbd>Esc</kbd></button>
+        <button className="btn btn-ghost audio-toggle-btn" onClick={() => setMenuOpen(true)} aria-haspopup="dialog" aria-expanded={menuOpen}>☰ MENU <kbd>Esc</kbd></button>
       </div>
     </header>
     {menuOpen && <div className="game-menu-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setMenuOpen(false); }}>
       <section className="game-menu modal-box" role="dialog" aria-modal="true" aria-labelledby="game-menu-title">
-        <div className="game-menu-heading"><div><p className="panel-tag">TRAIL MENU</p><h2 id="game-menu-title">Pause the adventure</h2></div><button className="btn btn-sm btn-ghost" onClick={() => setMenuOpen(false)} aria-label="Close menu">✕</button></div>
+        <div className="game-menu-heading"><div><p className="panel-tag">TRAIL MENU</p><h2 id="game-menu-title">Trail controls</h2></div><button className="btn btn-sm btn-ghost" onClick={() => setMenuOpen(false)} aria-label="Close menu">✕</button></div>
         <ul className="menu menu-vertical bg-base-200/40 rounded-box">
           <li><button onClick={() => setMenuOpen(false)}>Return to trail</button></li>
-          <li><button onClick={() => { setMenuOpen(false); setMuted(sounds.toggleMute()); }}>{muted ? "Turn sound on" : "Mute sound"}</button></li>
+          <li><button onClick={() => setMuted(sounds.toggleMute())}>{muted ? "Turn sound on" : "Mute sound"}</button></li>
           <li className="menu-title">AUDIO SETTINGS</li>
-          <li>
-            <div className="flex items-center gap-4 w-full py-2">
-              <span className="text-xs opacity-70 w-16">MUSIC</span>
-              <input type="range" min="0" max="1" step="0.01" value={musicVol} onChange={e => { const v = parseFloat(e.target.value); setMusicVol(v); sounds.setMusicVolume(v); }} className="range range-xs range-primary" />
-              <span className="text-xs w-8 text-right">{Math.round(musicVol * 100)}%</span>
-            </div>
-          </li>
-          <li>
-            <div className="flex items-center gap-4 w-full py-2">
-              <span className="text-xs opacity-70 w-16">SFX</span>
-              <input type="range" min="0" max="1" step="0.01" value={sfxVol} onChange={e => { const v = parseFloat(e.target.value); setSfxVol(v); sounds.setSfxVolume(v); }} className="range range-xs range-primary" />
-              <span className="text-xs w-8 text-right">{Math.round(sfxVol * 100)}%</span>
-            </div>
-          </li>
+          <li><label className="flex items-center gap-4 w-full py-2"><span className="text-xs opacity-70 w-16">MUSIC</span><input aria-label="Music volume" type="range" min="0" max="1" step="0.01" value={musicVol} onChange={event => { const volume = Number(event.target.value); setMusicVol(volume); sounds.setMusicVolume(volume); }} className="range range-xs range-primary"/><span className="text-xs w-8 text-right">{Math.round(musicVol * 100)}%</span></label></li>
+          <li><label className="flex items-center gap-4 w-full py-2"><span className="text-xs opacity-70 w-16">SFX</span><input aria-label="Sound effects volume" type="range" min="0" max="1" step="0.01" value={sfxVol} onChange={event => { const volume = Number(event.target.value); setSfxVol(volume); sounds.setSfxVolume(volume); }} className="range range-xs range-primary"/><span className="text-xs w-8 text-right">{Math.round(sfxVol * 100)}%</span></label></li>
         </ul>
         <div className="secret-panel">
           <label className="panel-tag" htmlFor="secret-code">SECRET TRAIL CODE</label>
-          <div className="secret-code-row"><input className="input input-bordered" id="secret-code" type="password" value={secretCode} onChange={event => setSecretCode(event.target.value)} onKeyDown={event => { if (event.key === "Enter") unlockSecret(); }} placeholder="Enter code" autoComplete="off"/><button className="btn btn-primary" onClick={unlockSecret}>Unlock</button></div>
+          <div className="secret-code-row"><input className="input" id="secret-code" type="password" value={secretCode} onChange={event => setSecretCode(event.target.value)} onKeyDown={event => { if (event.key === "Enter") unlockSecret(); }} placeholder="Enter code" autoComplete="off"/><button className="btn btn-primary" onClick={unlockSecret}>Unlock</button></div>
           {secretError && <p className="error" role="alert">{secretError}</p>}
-          {secretUnlocked && <div className="note-editor"><label className="panel-tag" htmlFor="player-note">PRIVATE TRAIL NOTE</label><textarea className="textarea textarea-bordered" id="player-note" value={playerNote} onChange={event => updatePlayerNote(event.target.value)} placeholder="Type anything here…"/><small>Saved on this device. It is not sent to the room.</small></div>}
+          {secretUnlocked && <div className="note-editor"><label className="panel-tag" htmlFor="player-note">PRIVATE TRAIL NOTE</label><textarea className="textarea" id="player-note" value={playerNote} onChange={event => updatePlayerNote(event.target.value)} placeholder="Type anything here…"/><small>Saved only on this device. It is never sent to the room.</small></div>}
         </div>
       </section>
     </div>}
@@ -566,22 +622,7 @@ export default function Home() {
     <aside className="side-card">
       {!session ? <div className="entry"><h2 className="entry-heading">Create or join an adventure</h2><label htmlFor="player-name">YOUR NAME</label><input className="ui-input" id="player-name" maxLength={20} placeholder="e.g. Pip" value={name} onChange={event => setName(event.target.value)}/><button className="ui-btn main-button" aria-busy={busy} disabled={busy || !name.trim()} onClick={() => void enter("create")}>{busy ? "OPENING ROOM…" : "CREATE A ROOM"} <span>→</span></button><div className="join-row"><input className="ui-input" aria-label="Six-character room code" maxLength={6} placeholder="ROOM CODE" value={code} onChange={event => setCode(event.target.value.toUpperCase().replace(/[^A-Z2-9]/g,""))}/><button aria-busy={busy} disabled={busy || !name.trim() || code.length !== 6} onClick={() => void enter("join")}>{busy ? "JOINING…" : "JOIN A FRIEND →"}</button></div><p className="tiny-note">Share a room code. No account needed.</p></div>:
       <div className="room"><p className="panel-tag">YOUR ROOM</p><div className="room-code">{session.code}</div><div className="share-actions"><button className="copy-button" onClick={() => void share("link")}>{copied ? "SHARED ✓" : "SHARE INVITE ↗"}</button><button className="copy-button" onClick={() => void share("code")}>COPY CODE</button></div>
-      <div className="room-status">{state?.phase === "lobby" ? <><strong>{state.playerCount}/4 PLAYERS</strong><span>{state.playerCount < 2 ? "Waiting for teammates: at least 2 players are required to begin." : state.isHost ? "You are the host. Choose a level and launch when everyone is ready." : "Waiting for the host to choose a level and launch."}</span></> : state?.phase === "active" ? `Playing ${currentLevel.name} · ${state.playerCount} adventurers` : state?.phase === "finished" ? (
-        <div className="results-modal">
-          <div className="results-content">
-            <h2 className="results-title">TRAIL CLEAR!</h2>
-            <div className="results-stats">
-              <div className="stat-item"><span>TIME</span><strong>{state.completion && `${Math.floor(state.completion.seconds / 60)}:${String(state.completion.seconds % 60).padStart(2, "0")}`}</strong></div>
-              <div className="stat-item"><span>FALLS</span><strong>{state.completion?.falls ?? 0}</strong></div>
-              <div className="stat-item"><span>LIGHTS</span><strong>{state.completion?.lights ?? 0}/4</strong></div>
-            </div>
-            <div className="results-crew">
-              <p className="crew-label">ADVENTURERS</p>
-              <div className="crew-list">{state.completion?.players.map(p => <span key={p} className="crew-pill">{p}</span>)}</div>
-            </div>
-          </div>
-        </div>
-      ) : "Connecting…"}</div>
+      <div className="room-status">{state?.phase === "lobby" ? <><strong>{state.playerCount}/4 PLAYERS</strong><span>{state.playerCount < 2 ? "Waiting for teammates: at least 2 players are required to begin." : state.isHost ? "You are the host. Choose a level and launch when everyone is ready." : "Waiting for the host to choose a level and launch."}</span></> : state?.phase === "active" ? `Playing ${currentLevel.name} · ${state.playerCount} adventurers` : state?.phase === "finished" ? <><strong>TRAIL CLEAR · {state.unlocked}/16 UNLOCKED</strong>{state.completion && <span>{Math.floor(state.completion.seconds / 60)}:{String(state.completion.seconds % 60).padStart(2, "0")} · {state.completion.falls} falls · {state.completion.lights}/4 lights · {state.completion.players.join(", ")}</span>}</> : "Connecting…"}</div>
       {state?.phase === "lobby" && <div className="room-readiness" role="status" aria-live="polite">
         <button className={`ui-badge ${isReady ? "ui-badge-success" : "ui-badge-warning"}`} onClick={() => setIsReady(!isReady)}>{isReady ? "READY ✓" : "MARK READY"}</button>
         <span className="badge-role">{state.isHost ? "HOST" : "CREW MEMBER"}</span>

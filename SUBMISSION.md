@@ -6,9 +6,9 @@
 
 **Preview image (upload file):** `showcase-cover.png` — a 1200 × 800 screenshot of a live two-player game screen.
 
-**Description (465/500 characters):**
+**Description (446/500 characters):**
 
-> I built Tandem Trails, an original 2–4 player platform adventure with 16 levels across four worlds. Friends join by room code from phones or laptops, collect lights, coordinate two switches, and reach the portal together. The hardest part was keeping movement and progress in sync across devices; designing the distinct worlds was the most fun. I learned to test the full multiplayer flow, not just one screen. Next, I’d add music, more hazards, and custom avatars.
+> I built Tandem Trails, an original 2–4 player platform adventure across 16 levels and four worlds. Friends join on phones or laptops, collect lights, coordinate switches, and reach the portal together. The hardest part was keeping rooms in sync through disconnects. Creating each world's look and sound was the most fun. I learned to test complete multiplayer rounds across devices. Next, I'd add more level mechanics and a nonvisual way to play.
 
 **Share to Showcase:** Select **Yes** to publish publicly and enter the challenge.
 

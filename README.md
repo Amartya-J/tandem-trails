@@ -4,7 +4,9 @@ A cooperative browser platformer for **2–4 players**. Cross four worlds, colle
 
 [Play the hosted edition](https://tandem-trails-coop.amar12356.chatgpt.site/)
 
-> The illustrated redesign is live at the hosted link above. GitHub stores the source; updating the hosted Sites edition requires a separate deployment.
+For a contest entry, use [SUBMISSION.md](SUBMISSION.md) and the [plain-language challenge guide](docs/Multiplayer_Game_Challenge_Guide.md). The design notes and improvement history are in [`docs/`](docs/).
+
+> GitHub stores the source. The hosted Sites edition is deployed separately, so pushing to `main` does not automatically publish these changes.
 
 ## Play together
 
@@ -86,7 +88,7 @@ The app requires a local Cloudflare Worker and D1 SQLite database instance; open
 
 ## Verify changes
 
-Run the unified test suite, linter, and build pipeline:
+With the local server running in another terminal, run the unified test suite, linter, and build pipeline:
 
 ```sh
 npm test
