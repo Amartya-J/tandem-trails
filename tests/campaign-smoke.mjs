@@ -4,12 +4,17 @@ import { EXIT_X, layout, LEVELS, PLATES, WORLDS } from '../lib/levels.ts';
 const base = new URL('/api/trails', process.env.TRAILS_BASE_URL || 'http://127.0.0.1:8787');
 
 async function post(action, session = {}, extra = {}) {
-  const response = await fetch(base, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...session, ...extra }),
-  });
-  return { status: response.status, data: await response.json() };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await fetch(base, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...session, ...extra }),
+    });
+    const result = { status: response.status, data: await response.json() };
+    if (result.status !== 429 || result.data.code !== 'RATE_LIMITED') return result;
+    await new Promise(resolve => setTimeout(resolve, 1050));
+  }
+  throw new Error(`Campaign action ${action} stayed rate limited`);
 }
 async function moveGuestTo(session, target) {
   let position = 80;

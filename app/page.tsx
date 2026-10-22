@@ -2,9 +2,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { EXIT_X, FLOOR, isGround, layout, LEVELS, PLATES, WORLD_WIDTH, WORLDS } from "../lib/levels";
+import { EXIT_X, FLOOR, isGround, layout, LEVELS, LEVEL_0_TUTORIAL_CUES, PLATES, WORLD_WIDTH, WORLDS, calculateMedal, getMedalThresholds } from "../lib/levels";
 import { sounds } from "../lib/audio";
 import { NETWORK_POLL_MS, PLAYER_HEIGHT, PLAYER_WIDTH, POSITION_SEND_MS, SPAWN, type Room } from "../lib/game-types";
+import CampaignMap, { type LevelRecord } from "./components/campaign/CampaignMap";
 
 type Session = { code: string; token: string };
 type Hero = { x: number; y: number; vx: number; vy: number; ground: boolean; checkpoint: number; jumpLatch: boolean; jumpBuffer: number; coyote: number; grace: number };
@@ -74,7 +75,7 @@ function avatar(ctx: CanvasRenderingContext2D, x: number, y: number, variant: nu
   ctx.restore();
 }
 function paint(ctx: CanvasRenderingContext2D, index: number, room: Room | null, hero: Hero, remotes: Map<number, {x:number;y:number}>, time: number, camera: number) {
-  const { level, gaps, platforms, shards, hazards } = layout(index); const world = WORLDS[level.world];
+  const { level, gaps, platforms, shards, hazards, optional, syncBridge } = layout(index); const world = WORLDS[level.world];
   const scale = Number(ctx.canvas.dataset.pixelRatio || 1);
   const w = ctx.canvas.width / scale, h = ctx.canvas.height / scale;
   ctx.clearRect(0, 0, w, h);
@@ -141,6 +142,11 @@ function paint(ctx: CanvasRenderingContext2D, index: number, room: Room | null, 
     for (let root = 0; root < 3; root++) { const rx = platform.x + 18 + root * (platform.w - 36) / 2; ctx.strokeStyle = "#0b1726"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(rx, platform.y + 15); ctx.quadraticCurveTo(rx + (root - 1) * 8, platform.y + 28, rx - 4, platform.y + 35 + root * 3); ctx.stroke(); }
     if (platform.spring) { star(ctx, platform.x + platform.w / 2, platform.y + 3, 7, "#fff8c4"); }
   }
+  if (room?.phase === "active" && room.players.some((player, playerIndex) => playerIndex !== room.meIndex && player.active !== false && Math.hypot(player.x - hero.x, player.y - hero.y) <= 350)) {
+    roundRect(ctx, syncBridge.x, syncBridge.y, syncBridge.w, 11, 6, "#a5ffe2");
+    ctx.fillStyle = "#fff8bb"; ctx.font = "800 10px sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("SYNC BRIDGE", syncBridge.x + syncBridge.w / 2, syncBridge.y - 8);
+  }
   for (const x of hazards) {
     const wobble = Math.sin(time * 3 + x) * 2; ctx.save(); ctx.translate(x, FLOOR - 10 + wobble);
     ctx.fillStyle = "#101b2e"; ctx.strokeStyle = world.accent; ctx.lineWidth = 2;
@@ -152,6 +158,14 @@ function paint(ctx: CanvasRenderingContext2D, index: number, room: Room | null, 
   shards.forEach((shard, i) => { if (room && (room.collected & (1 << i))) return;
     const pulse = Math.sin(time * 4 + i) * 3;
     ctx.save(); ctx.shadowColor=world.accent;ctx.shadowBlur=22; ctx.translate(shard.x, shard.y + pulse); ctx.fillStyle = "#fff9d9"; ctx.globalAlpha = .72; ctx.beginPath(); ctx.ellipse(-11, 0, 10, 5, -.5, 0, 7); ctx.ellipse(11, 0, 10, 5, .5, 0, 7); ctx.fill(); ctx.globalAlpha = 1; star(ctx, 0, 0, 11, world.accent); star(ctx, 0, 0, 5, "#fffde7"); ctx.restore();
+  });
+  optional.forEach((firefly, i) => {
+    if (room && (room.optionalCollected & (1 << i))) return;
+    const bob = Math.sin(time * 3 + i * 2) * 5;
+    ctx.save(); ctx.translate(firefly.x, firefly.y + bob);
+    ctx.shadowColor = "#b8ffcf"; ctx.shadowBlur = 18;
+    star(ctx, 0, 0, 7, "#a4ffcb"); star(ctx, 0, 0, 3, "#fffceb");
+    ctx.restore();
   });
   PLATES.forEach((x, i) => {
     const on = !!room?.gateOpen || !!room?.players.some(p => p.active !== false && p.x + 17 > x - 26 && p.x + 17 < x + 26 && p.y > 360);
@@ -219,10 +233,13 @@ export default function Home() {
   const stateRef = useRef<Room | null>(null); const sessionRef = useRef<Session | null>(null);
   const heroRef = useRef<Hero>(NEW_HERO()); const keysRef = useRef<Set<string>>(new Set()); const touchRef = useRef<Set<string>>(new Set());
   const remotesRef = useRef<Map<number,{x:number;y:number}>>(new Map()); const pendingRef = useRef<Set<number>>(new Set());
+  const pendingOptionalRef = useRef<Set<number>>(new Set());
   const finishRef = useRef(false); const runRef = useRef(-1); const pollingRef = useRef(false);
+  const scoredRunRef = useRef("");
+  const timerStartRef = useRef(0);
   const cameraRef = useRef(0); const failCountRef = useRef(0);
   const needsReconnectNoticeRef = useRef(false);
-  const previousRoomRef = useRef<{ playerCount: number; collected: number; gateOpen: boolean; hostName: string } | null>(null);
+  const previousRoomRef = useRef<{ playerCount: number; collected: number; optionalCollected: number; gateOpen: boolean; hostName: string } | null>(null);
   const [session, setSession] = useState<Session | null>(null); const [state, setState] = useState<Room | null>(null);
   const [name, setName] = useState(""); const [code, setCode] = useState(""); const [selected, setSelected] = useState(0);
   const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [notice, setNotice] = useState("");
@@ -243,6 +260,28 @@ export default function Home() {
   const [secretError, setSecretError] = useState("");
   const [secretUnlocked, setSecretUnlocked] = useState(false);
   const [playerNote, setPlayerNote] = useState("");
+  const [records, setRecords] = useState<Record<number, LevelRecord>>({});
+  const [lastRunRecord, setLastRunRecord] = useState<{ isNewBest: boolean; medal: LevelRecord["medal"]; seconds: number } | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        const saved = localStorage.getItem("tandem-level-records");
+        if (saved) setRecords(JSON.parse(saved) as Record<number, LevelRecord>);
+      } catch { /* records stay local to this device */ }
+    });
+  }, []);
+  useEffect(() => {
+    if (Object.keys(records).length) {
+      try { localStorage.setItem("tandem-level-records", JSON.stringify(records)); } catch { /* continue without saved records */ }
+    }
+  }, [records]);
+  useEffect(() => {
+    if (state?.phase !== "active") return;
+    const timer = window.setInterval(() => setElapsed(Math.floor((Date.now() - timerStartRef.current) / 1000)), 1000);
+    return () => window.clearInterval(timer);
+  }, [state?.phase, state?.run]);
 
   useEffect(() => { stateRef.current = state; }, [state]);
   useEffect(() => { sessionRef.current = session; }, [session]);
@@ -387,9 +426,12 @@ export default function Home() {
     const previous = previousRoomRef.current;
     if (state.phase === "active" && state.run !== runRef.current) {
       runRef.current = state.run;
+      setLastRunRecord(null);
+      timerStartRef.current = Date.now();
+      setElapsed(0);
       // Restore the last server position so a refresh mid-level does not snap to spawn.
       heroRef.current = heroFromPlayer(state.players[state.meIndex]);
-      remotesRef.current.clear(); pendingRef.current.clear(); finishRef.current = false;
+      remotesRef.current.clear(); pendingRef.current.clear(); pendingOptionalRef.current.clear(); finishRef.current = false;
       const worldData = WORLDS[LEVELS[state.level].world];
       const mechanicHint = state.level === 0 ? "Collect 4 lights & stand on switches A+B" : worldData.tagline;
       sounds.playNotify();
@@ -404,8 +446,13 @@ export default function Home() {
         const collectedCount = [0, 1, 2, 3].filter(index => state.collected & (1 << index)).length;
         queueMicrotask(() => setNotice(`${collectedCount}/4 lights collected`));
       }
+      if (state.optionalCollected !== previous.optionalCollected && state.optionalCollected > previous.optionalCollected) {
+        sounds.playCollect();
+        queueMicrotask(() => setNotice("A bonus firefly joined the crew"));
+      }
       if (!previous.gateOpen && state.gateOpen) {
         sounds.playGate();
+        sounds.playSyncChime();
         queueMicrotask(() => setNotice("Gate open · everyone to the portal"));
       }
     }
@@ -417,11 +464,26 @@ export default function Home() {
     previousRoomRef.current = {
       playerCount: state.playerCount,
       collected: state.collected,
+      optionalCollected: state.optionalCollected,
       gateOpen: state.gateOpen,
       hostName,
     };
-    if (state.phase === "finished") { finishRef.current = false; sounds.playComplete(); queueMicrotask(() => setSelected(state.level < 15 ? state.level + 1 : 0)); }
-  }, [state]);
+    if (state.phase === "finished") {
+      finishRef.current = false;
+      const runKey = `${state.code}:${state.run}:${state.level}`;
+      if (runKey !== scoredRunRef.current && state.completion) {
+        scoredRunRef.current = runKey;
+        const seconds = Math.max(1, state.completion.seconds);
+        const medal = calculateMedal(state.level, seconds);
+        const existing = records[state.level];
+        const isNewBest = !existing || seconds < existing.bestTimeSeconds;
+        if (isNewBest) queueMicrotask(() => setRecords(current => ({ ...current, [state.level]: { bestTimeSeconds: seconds, medal } })));
+        queueMicrotask(() => setLastRunRecord({ isNewBest, medal, seconds }));
+        sounds.playVictoryFanfare(LEVELS[state.level].world);
+        queueMicrotask(() => setSelected(state.level < 15 ? state.level + 1 : 0));
+      }
+    }
+  }, [state, records]);
 
   const action = useCallback(async (kind: string, extra: Record<string, unknown> = {}) => {
     const current = sessionRef.current;
@@ -535,7 +597,9 @@ export default function Home() {
         hero.vy += gravity * dt; hero.y += hero.vy * dt; hero.ground = false;
         let landing = Infinity; let spring = false;
         if (isGround(hero.x + 17, levelData.gaps) && oldBottom <= FLOOR + 12 && hero.y + 42 >= FLOOR && hero.vy >= 0) landing = FLOOR;
-        for (const platform of levelData.platforms) if (hero.x + 30 > platform.x && hero.x + 4 < platform.x + platform.w && oldBottom <= platform.y + 8 && hero.y + 42 >= platform.y && hero.vy >= 0 && platform.y < landing) { landing = platform.y; spring = platform.spring; }
+        const bridgeLinked = room.players.some((player, playerIndex) => playerIndex !== room.meIndex && player.active !== false && Math.hypot(player.x - hero.x, player.y - hero.y) <= 350);
+        const collisionPlatforms = bridgeLinked ? [...levelData.platforms, { ...levelData.syncBridge, spring: false }] : levelData.platforms;
+        for (const platform of collisionPlatforms) if (hero.x + 30 > platform.x && hero.x + 4 < platform.x + platform.w && oldBottom <= platform.y + 8 && hero.y + 42 >= platform.y && hero.vy >= 0 && platform.y < landing) { landing = platform.y; spring = platform.spring; }
         if (landing < Infinity) {
           if (!hero.ground && hero.vy > 120 && !spring) sounds.playLand();
           hero.y = landing - 42;
@@ -556,6 +620,12 @@ export default function Home() {
         if (now - lastCollect > 220) { lastCollect = now; levelData.shards.forEach((shard, i) => {
           if ((room.collected & (1 << i)) || pendingRef.current.has(i)) return;
           if (Math.hypot(hero.x + 17 - shard.x, hero.y + 22 - shard.y) < 46) { pendingRef.current.add(i); void action("collect", { shard: i }).catch(() => {}).finally(() => setTimeout(() => pendingRef.current.delete(i), 500)); }
+        }); levelData.optional.forEach((firefly, i) => {
+          if ((room.optionalCollected & (1 << i)) || pendingOptionalRef.current.has(i)) return;
+          if (Math.hypot(hero.x + 17 - firefly.x, hero.y + 22 - firefly.y) < 46) {
+            pendingOptionalRef.current.add(i);
+            void action("collectOptional", { index: i }).catch(() => {}).finally(() => setTimeout(() => pendingOptionalRef.current.delete(i), 500));
+          }
         }); }
         if (room.gateOpen && room.collected === 15 && !finishRef.current) {
           const finishers = room.players.filter((player, index) => index === room.meIndex || player.active !== false);
@@ -580,6 +650,10 @@ export default function Home() {
 
   const active = state?.phase === "active"; const currentLevel = LEVELS[state?.level ?? selected]; const world = WORLDS[currentLevel.world];
   const lightsCollected = state ? [0, 1, 2, 3].filter(index => state.collected & (1 << index)).length : 0;
+  const firefliesCollected = state ? [0, 1].filter(index => state.optionalCollected & (1 << index)).length : 0;
+  const localPlayer = state?.players[state.meIndex];
+  const syncLinked = !!localPlayer && !!state?.players.some((player, index) => index !== state.meIndex && player.active !== false && Math.hypot(player.x - localPlayer.x, player.y - localPlayer.y) <= 350);
+  const tutorialCue = active && state.level === 0 && localPlayer ? LEVEL_0_TUTORIAL_CUES.find(cue => localPlayer.x >= cue.minX && localPlayer.x <= cue.maxX) : null;
   const activeCrew = state?.players.filter(player => player.active !== false) ?? [];
   const portalCrew = activeCrew.length >= 2 ? activeCrew : (state?.players ?? []);
   const playersAtPortal = portalCrew.filter(player => player.x + 17 >= EXIT_X - 45 && player.y <= 410).length;
@@ -592,6 +666,7 @@ export default function Home() {
     <header className="topbar">
       <Link className="brand" href="/" aria-label="Tandem Trails home"><span>✦</span> TANDEM TRAILS</Link>
       <div className="header-right">
+        <Link href="/trail-journal" className="ui-btn ui-btn-ghost journal-link">JOURNAL</Link>
         {session && <span className={`conn-indicator ${connState}${latencyMs !== null && latencyMs > 700 && connState === "connected" ? " laggy" : ""}`} title={latencyMs !== null ? `Status: ${connState} · ${latencyMs} ms` : `Status: ${connState}`}>● {connState === "connected" && latencyMs !== null && latencyMs > 700 ? `SLOW ${latencyMs}ms` : connState.toUpperCase()}</span>}
         <button className="audio-toggle-btn" onClick={() => setMuted(sounds.toggleMute())} title={muted ? "Unmute audio" : "Mute audio"}>{muted ? "🔇 SOUND OFF" : "🔊 SOUND ON"}</button>
         <span>4 PAINTED WORLDS</span>
@@ -618,16 +693,26 @@ export default function Home() {
       </section>
     </div>}
     <div className="overview"><div className="hero-copy"><p className="eyebrow">AN ORIGINAL CO-OP PLATFORM ADVENTURE</p><h1>Tandem<br/><em>Trails</em><span aria-hidden="true">✦</span></h1><p>Dash through a living storybook.<br/>Nobody gets left behind.</p><div className="hero-chips" aria-label="Game features"><span>16 TRAILS</span><span>4 HEROES</span><span>1 CREW</span></div></div><Image className="cast-art" src="/art/trailblazer-cast.png" width={1918} height={820} priority alt="The four original Tandem Trails adventurers: a rabbit scout, mushroom alchemist, moth glider, and cloud sprite."/></div>
-    <div className="main-grid"><section className="stage-card" aria-label="Game stage"><div className="stage-header"><span><i className="status-light"/> {state?.phase === "active" ? "TRAIL IN PROGRESS" : state?.phase === "finished" ? "TRAIL COMPLETE" : "STORYBOOK PREVIEW"}</span><strong>{world.short} <b>·</b> {currentLevel.name.toUpperCase()}</strong></div><div className="canvas-wrap"><canvas ref={canvasRef} width={960} height={540} aria-label={`Side-scrolling platform level: ${currentLevel.name}. Move with arrows or A and D; jump with Space.`}/>{worldTransition && <div className="world-transition" role="status" aria-live="polite"><span className="transition-kicker">WORLD {worldTransition.world + 1} · TRAIL {worldTransition.level + 1}</span><strong>{WORLDS[worldTransition.world].name}</strong><b>{LEVELS[worldTransition.level].name}</b><small>{WORLDS[worldTransition.world].tagline}</small></div>}</div><div className="stage-footer" aria-live="polite"><span>✦ {lightsCollected}/4 LIGHTS</span><span>{state?.gateOpen ? "GATE OPEN · GATHER AT THE PORTAL" : "HOLD SWITCHES A + B TOGETHER"}</span><span>{playersAtPortal}/{portalNeeded} READY · TRAIL {(state?.level ?? selected) + 1}/16</span></div></section>
+    <div className="main-grid"><section className="stage-card" aria-label="Game stage"><div className="stage-header"><span><i className="status-light"/> {state?.phase === "active" ? "TRAIL IN PROGRESS" : state?.phase === "finished" ? "TRAIL COMPLETE" : "STORYBOOK PREVIEW"}</span><strong>{world.short} <b>·</b> {currentLevel.name.toUpperCase()}</strong></div><div className="canvas-wrap"><canvas ref={canvasRef} width={960} height={540} aria-label={`Side-scrolling platform level: ${currentLevel.name}. Move with arrows or A and D; jump with Space.`}/>{tutorialCue && <div className="tutorial-cue" role="status"><strong>{tutorialCue.title}</strong><span>{tutorialCue.subtitle}</span></div>}{worldTransition && <div className="world-transition" role="status" aria-live="polite"><span className="transition-kicker">WORLD {worldTransition.world + 1} · TRAIL {worldTransition.level + 1}</span><strong>{WORLDS[worldTransition.world].name}</strong><b>{LEVELS[worldTransition.level].name}</b><small>{WORLDS[worldTransition.world].tagline}</small></div>}</div><div className="stage-footer" aria-live="polite"><span>✦ {lightsCollected}/4 LIGHTS</span><span>✧ {firefliesCollected}/2 BONUS FIREFLIES</span><span className={`sync-status ${syncLinked ? "linked" : ""}`}>⚡ {syncLinked ? "SYNC LINK LIVE" : "STAY CLOSE"}</span><span>⏱ {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}</span><span>{state?.gateOpen ? "GATE OPEN · GATHER AT THE PORTAL" : "HOLD SWITCHES A + B TOGETHER"}</span><span>{playersAtPortal}/{portalNeeded} READY · TRAIL {(state?.level ?? selected) + 1}/16</span></div></section>
     <aside className="side-card">
       {!session ? <div className="entry"><h2 className="entry-heading">Create or join an adventure</h2><label htmlFor="player-name">YOUR NAME</label><input className="ui-input" id="player-name" maxLength={20} placeholder="e.g. Pip" value={name} onChange={event => setName(event.target.value)}/><button className="ui-btn main-button" aria-busy={busy} disabled={busy || !name.trim()} onClick={() => void enter("create")}>{busy ? "OPENING ROOM…" : "CREATE A ROOM"} <span>→</span></button><div className="join-row"><input className="ui-input" aria-label="Six-character room code" maxLength={6} placeholder="ROOM CODE" value={code} onChange={event => setCode(event.target.value.toUpperCase().replace(/[^A-Z2-9]/g,""))}/><button aria-busy={busy} disabled={busy || !name.trim() || code.length !== 6} onClick={() => void enter("join")}>{busy ? "JOINING…" : "JOIN A FRIEND →"}</button></div><p className="tiny-note">Share a room code. No account needed.</p></div>:
       <div className="room"><p className="panel-tag">YOUR ROOM</p><div className="room-code">{session.code}</div><div className="share-actions"><button className="copy-button" onClick={() => void share("link")}>{copied ? "SHARED ✓" : "SHARE INVITE ↗"}</button><button className="copy-button" onClick={() => void share("code")}>COPY CODE</button></div>
       <div className="room-status">{state?.phase === "lobby" ? <><strong>{state.playerCount}/4 PLAYERS</strong><span>{state.playerCount < 2 ? "Waiting for teammates: at least 2 players are required to begin." : state.isHost ? "You are the host. Choose a level and launch when everyone is ready." : "Waiting for the host to choose a level and launch."}</span></> : state?.phase === "active" ? `Playing ${currentLevel.name} · ${state.playerCount} adventurers` : state?.phase === "finished" ? <><strong>TRAIL CLEAR · {state.unlocked}/16 UNLOCKED</strong>{state.completion && <span>{Math.floor(state.completion.seconds / 60)}:{String(state.completion.seconds % 60).padStart(2, "0")} · {state.completion.falls} falls · {state.completion.lights}/4 lights · {state.completion.players.join(", ")}</span>}</> : "Connecting…"}</div>
+      {state?.phase === "finished" && state.completion && <section className="run-results" aria-label="Trail results">
+        <h3>TRAIL CLEAR! {lastRunRecord?.isNewBest && <span className="ui-badge ui-badge-warning">NEW BEST</span>}</h3>
+        <div className="results-stats">
+          <div className="stat-item"><span>TIME</span><strong>{Math.floor((lastRunRecord?.seconds ?? state.completion.seconds) / 60)}:{String((lastRunRecord?.seconds ?? state.completion.seconds) % 60).padStart(2, "0")}</strong></div>
+          <div className="stat-item"><span>FALLS</span><strong>{state.completion.falls}</strong></div>
+          <div className="stat-item"><span>MEDAL</span><strong>{(lastRunRecord?.medal ?? calculateMedal(state.level, state.completion.seconds)).toUpperCase()}</strong></div>
+        </div>
+        <p>Gold ≤{getMedalThresholds(state.level).gold}s · Silver ≤{getMedalThresholds(state.level).silver}s</p>
+        <div className="challenge-ribbons">{state.completion.falls === 0 && <span>✦ FLAWLESS RUN</span>}{state.completion.fireflies === 2 && <span>✦ FIREFLY FINDERS</span>}</div>
+      </section>}
       {state?.phase === "lobby" && <div className="room-readiness" role="status" aria-live="polite">
         <button className={`ui-badge ${isReady ? "ui-badge-success" : "ui-badge-warning"}`} onClick={() => setIsReady(!isReady)}>{isReady ? "READY ✓" : "MARK READY"}</button>
         <span className="badge-role">{state.isHost ? "HOST" : "CREW MEMBER"}</span>
       </div>}
-      {state?.phase !== "active" && <div className="level-picker"><p className="panel-tag">CHOOSE A LEVEL</p>{WORLDS.map((item, worldIndex) => <div className="world-group" key={item.name}><h3><span>0{worldIndex + 1}</span> {item.name}</h3><div className="level-buttons">{LEVELS.filter(level => level.world === worldIndex).map(level => <button key={level.index} className={selected === level.index ? "selected" : ""} disabled={level.index > (state?.unlocked ?? 0) || !state?.isHost} onClick={() => setSelected(level.index)} title={level.name}>{level.index > (state?.unlocked ?? 0) ? "⌁" : level.stage + 1}</button>)}</div></div>)}<p className="level-briefing"><strong>{LEVELS[selected].name}</strong> · {LEVELS[selected].briefing}</p></div>}
+      {state?.phase !== "active" && <p className="map-pointer">{state?.isHost ? "Choose a trail on the campaign map below." : "The host chooses a trail on the campaign map below."}</p>}
       {state?.isHost && state.phase !== "active" && <button className="ui-btn main-button" aria-busy={busy} disabled={busy || state.playerCount < 2} onClick={() => void doAction("start", { level: selected })} title={state.playerCount < 2 ? "Need at least 2 players to start" : "Start level"}>{busy ? "STARTING…" : state.phase === "finished" ? "NEXT ADVENTURE" : state.playerCount < 2 ? "WAITING FOR 2 PLAYERS…" : "START THE ADVENTURE"}<span>→</span></button>}
       {state?.isHost && state.phase === "active" && <button className="small-button" aria-busy={busy} disabled={busy} onClick={() => void doAction("restart")}>{busy ? "RESTARTING…" : "RESTART THIS LEVEL ↻"}</button>}
       {state?.phase !== "active" && <div className="lobby-actions"><button className={`leave-button ${confirmLeave ? "confirm-active" : ""}`} onClick={() => void leave()}>{confirmLeave ? "Confirm Leave Room?" : "Leave room"}</button></div>}
@@ -647,7 +732,8 @@ export default function Home() {
         {notice || (state ? `Current state: Trail ${(state.level ?? selected) + 1}, ${lightsCollected} of 4 lights collected, ${state.gateOpen ? "Gate open" : "Switches A and B required"}` : "")}
       </div>
     </aside></div>
-    <div className="below"><details className="rules"><summary>HOW TO PLAY <span>+</span></summary><ol><li>Create a room and invite 1–3 people with the link or six-character code.</li><li>Everyone moves at the same time. Use arrows or A/D to run, Space to jump, or the phone buttons.</li><li>Find all four lights. Two different players stand on the marked switches together to open the gate.</li><li>Everyone reaches the portal to clear the level. The host chooses the next unlocked level. Falling or touching a hazard sends you to your last checkpoint.</li></ol></details>
+    {session && state?.phase !== "active" && <div className="campaign-area"><CampaignMap unlockedLevel={state?.unlocked ?? 0} completedLevels={Array.from({ length: state?.unlocked ?? 0 }, (_, index) => index)} records={records} selectedLevel={selected} onSelectLevel={setSelected} isHost={state?.isHost ?? false}/></div>}
+    <div className="below"><nav className="journal-nav" aria-label="Game guide"><Link className="ui-btn ui-btn-ghost" href="/trail-journal">TRAIL JOURNAL ↗</Link><Link className="ui-btn ui-btn-ghost" href="/trail-journal#mechanics-heading">MECHANICS GUIDE ↗</Link></nav><details className="rules"><summary>HOW TO PLAY <span>+</span></summary><ol><li>Create a room and invite 1–3 people with the link or six-character code.</li><li>Everyone moves at the same time. Use arrows or A/D to run, Space to jump, or the phone buttons.</li><li>Find all four lights. Two different players stand on the marked switches together to open the gate.</li><li>Everyone reaches the portal to clear the level. The host chooses the next unlocked level. Falling or touching a hazard sends you to your last checkpoint.</li></ol></details>
     <div className="controls-hint">← → / A D &nbsp; RUN <b>·</b> SPACE / ↑ &nbsp; JUMP <b>·</b> STAND TOGETHER ON A + B &nbsp;·&nbsp; <button className="pref-toggle-btn" onClick={toggleTouchLayout}>🖐 Touch: {touchLayout === "standard" ? "Standard" : "Left-Handed"}</button></div></div>
     {active && <div className={`touch-controls ${touchLayout}`} aria-label="Touch controls">{touchButtons.map(([key,label]) => <button key={key} onPointerDown={event => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); touchRef.current.add(key); }} onPointerUp={() => touchRef.current.delete(key)} onPointerCancel={() => touchRef.current.delete(key)} onLostPointerCapture={() => touchRef.current.delete(key)}>{label}</button>)}</div>}
     <footer><span>AN ORIGINAL COOPERATIVE PLATFORM ADVENTURE</span><span>MADE FOR PLAYING TOGETHER FROM ANYWHERE</span></footer>

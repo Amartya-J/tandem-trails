@@ -20,6 +20,7 @@ export type Completion = {
   seconds: number;
   falls: number;
   lights: number;
+  fireflies: number;
   players: string[];
   newlyUnlocked: number;
 };
@@ -31,6 +32,7 @@ export type Room = {
   unlocked: number;
   run: number;
   collected: number;
+  optionalCollected: number;
   gateOpen: boolean;
   isHost: boolean;
   meIndex: number;

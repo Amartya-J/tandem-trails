@@ -8,6 +8,11 @@ const attempts=await Promise.all(Array.from({length:6},(_,i)=>post('join',{}, {c
 const guests=attempts.filter(r=>r.status===200).map(r=>r.data);assert.equal(guests.length,3,'room must cap at four people');
 const nonHostStart=await post('start',guests[0],{level:0});assert.equal(nonHostStart.status,403);assert.equal(nonHostStart.data.code,'NOT_HOST');
 const started=await post('start',host,{level:0});assert.equal(started.status,200);assert.equal(started.data.players.length,4);assert.equal(started.data.phase,'active');
+assert.equal(started.data.optionalCollected,0);
+assert.equal((await post('collectOptional',host,{index:0})).status,409,'fireflies must require proximity');
+assert.equal((await post('move',host,{x:633,y:288})).status,200);
+assert.equal((await post('collectOptional',host,{index:0})).status,200);
+assert.equal((await get(guests[0])).data.optionalCollected,1,'bonus fireflies must sync across devices');
 // Reconnect restores the same device session (refresh / temporary network loss).
 const reconnected=await post('reconnect',host);assert.equal(reconnected.status,200);assert.equal(reconnected.data.phase,'active');assert.equal(reconnected.data.isHost,true);assert.equal(reconnected.data.players[reconnected.data.meIndex].isHost,true);
 assert.equal((await get(host)).status,200,'saved token must keep working after reconnect');
@@ -33,6 +38,9 @@ assert.equal((await post('move',guests[0],{x:1910,y:388})).status,200);
 for(const player of guests.slice(1)){for(const x of [700,1400,1910])assert.equal((await post('move',player,{x,y:388})).status,200);}
 const done=await post('complete',guests[2]);assert.equal(done.status,200);assert.equal(done.data.phase,'finished');assert.equal(done.data.unlocked,1);
 assert.equal(done.data.completion.lights,4);assert.equal(done.data.completion.players.length,4);assert.ok(Number.isInteger(done.data.completion.seconds));
+assert.equal(done.data.completion.fireflies,1,'bonus fireflies must not block level completion');
+await new Promise(resolve=>setTimeout(resolve,1100));
+assert.equal((await get(host)).data.completion.seconds,done.data.completion.seconds,'finished run time must stay fixed');
 assert.equal((await post('start',host,{level:2})).status,400,'locked levels remain closed');
 const next=await post('start',host,{level:1});assert.equal(next.status,200);assert.equal(next.data.level,1);assert.equal(next.data.collected,0);assert.equal(next.data.gateOpen,false);
 const run=next.data.run;const restarted=await post('restart',host);assert.equal(restarted.data.run,run+1);

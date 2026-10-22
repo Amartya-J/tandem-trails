@@ -25,9 +25,13 @@ function rateLimited(key: string, limit: number, windowMs: number) {
 const db = () => { if (!env.DB) throw Error("Room storage is unavailable"); return env.DB; };
 const validCode = (value: unknown) => String(value ?? "").trim().toUpperCase();
 const now = () => Math.floor(Date.now() / 1000);
+let lastRoomPurgeAt = 0;
 
 async function purgeAbandonedRooms() {
-  const cutoff = now() - ROOM_IDLE_SECONDS;
+  const seenAt = now();
+  if (seenAt - lastRoomPurgeAt < 60) return;
+  lastRoomPurgeAt = seenAt;
+  const cutoff = seenAt - ROOM_IDLE_SECONDS;
   // Rooms whose newest heartbeat (or create time if empty) is older than the idle window.
   await db().prepare(`
     DELETE FROM trail_players WHERE room_code IN (
@@ -79,11 +83,14 @@ async function state(code: string, token: string) {
   const room = await ensureHost(loaded.room, loaded.players, seenAt);
   const players = loaded.players;
   return respond({
-    code, phase: room.phase, level: room.level, unlocked: room.unlocked, run: room.run, collected: room.collected, gateOpen: !!room.gate_open,
+    code, phase: room.phase, level: room.level, unlocked: room.unlocked, run: room.run, collected: room.collected & 15,
+    optionalCollected: (room.collected >> 4) & 3, gateOpen: !!room.gate_open,
     completion: room.phase === "finished" ? {
-      seconds: Math.max(0, seenAt - (room.started_at || seenAt)),
+      // A negative started_at stores the frozen run duration for finished rooms.
+      seconds: room.started_at !== null && room.started_at < 0 ? -room.started_at : Math.max(0, seenAt - (room.started_at || seenAt)),
       falls: room.falls,
       lights: 4,
+      fireflies: ((room.collected >> 4) & 3).toString(2).replace(/0/g, "").length,
       players: players.map(player => player.name),
       newlyUnlocked: Math.min(16, room.level + 2),
     } : null,
@@ -218,6 +225,16 @@ export async function POST(request: Request) {
       await d.prepare("UPDATE trail_rooms SET collected = collected | ? WHERE code = ? AND phase = 'active' AND level = ?").bind(1 << shard, code, room.level).run();
       return state(code, token);
     }
+    if (action === "collectOptional") {
+      const index = Number("index" in input ? input.index : NaN);
+      if (!Number.isInteger(index) || index < 0 || index > 1) return errorResponse("INVALID_FIREFLY", "Invalid firefly", 400);
+      const target = layout(room.level).optional[index];
+      const current = await d.prepare("SELECT x, y FROM trail_players WHERE token = ? AND room_code = ?").bind(token, code).first<{x:number;y:number}>();
+      if (!current || Math.hypot(current.x + 17 - target.x, current.y + 22 - target.y) > 90) return errorResponse("FIREFLY_OUT_OF_RANGE", "Move closer to the firefly", 409);
+      await d.prepare("UPDATE trail_rooms SET collected = collected | ? WHERE code = ? AND phase = 'active' AND level = ?")
+        .bind(1 << (index + 4), code, room.level).run();
+      return state(code, token);
+    }
     if (action === "fall") {
       await d.prepare("UPDATE trail_rooms SET falls = falls + 1 WHERE code = ? AND phase = 'active'").bind(code).run();
       return respond({ ok: true });
@@ -230,12 +247,14 @@ export async function POST(request: Request) {
       const activePlayers = snapshot.players.filter(player => isActive(player, seenAt));
       const finishers = activePlayers.length >= 2 ? activePlayers : snapshot.players;
       const allAtExit = finishers.length >= 2 && finishers.every(player => player.x + 17 >= EXIT_X - 45 && player.y <= 410);
-      if (!current || current.phase !== "active" || current.collected !== 15 || !current.gate_open || !allAtExit) {
+      if (!current || current.phase !== "active" || (current.collected & 15) !== 15 || !current.gate_open || !allAtExit) {
         return errorResponse("COMPLETION_NOT_READY", activePlayers.length < 2 && snapshot.players.length >= 2
           ? "At least two active players need to reach the portal together"
           : "Collect four lights, open the gate, and bring everyone to the portal", 409);
       }
-      await d.prepare("UPDATE trail_rooms SET phase = 'finished', unlocked = MAX(unlocked, MIN(15, level + 1)) WHERE code = ? AND phase = 'active'").bind(code).run();
+      const seconds = Math.max(1, seenAt - (current.started_at ?? seenAt));
+      await d.prepare("UPDATE trail_rooms SET phase = 'finished', started_at = ?, unlocked = MAX(unlocked, MIN(15, level + 1)) WHERE code = ? AND phase = 'active'")
+        .bind(-seconds, code).run();
       return state(code, token);
     }
     return errorResponse("UNKNOWN_ACTION", "Unknown action", 400);
