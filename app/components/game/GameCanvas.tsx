@@ -433,5 +433,5 @@ export default function GameCanvas({ index, room, heroRef, cameraRef, shakeRef, 
     return () => cancelAnimationFrame(frame);
   }, [index, room, cameraRef, heroRef, particlesRef, remotesRef, shakeRef]);
 
-  return <canvas ref={canvasRef} width={960} height={540} data-pixel-ratio={window.devicePixelRatio || 1} aria-label={`Side-scrolling platform level.`} />;
+  return <canvas ref={canvasRef} width={960} height={540} data-pixel-ratio={1} aria-label="Side-scrolling platform level" />;
 }

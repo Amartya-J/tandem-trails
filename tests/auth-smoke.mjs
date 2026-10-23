@@ -13,6 +13,10 @@ const post = (body, headers = {}) => fetch(`${base}/api/bio`, {
   body: typeof body === "string" ? body : JSON.stringify(body),
 });
 
+const homepage = await fetch(base);
+assert.equal(homepage.status, 200, "the game homepage renders successfully");
+assert.match(await homepage.text(), /TANDEM TRAILS/, "the game entry point is visible");
+
 const publicBio = await fetch(`${base}/api/bio`);
 assert.equal(publicBio.status, 200, "public bio remains readable without a login");
 const original = (await publicBio.json()).content;
