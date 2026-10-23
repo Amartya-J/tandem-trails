@@ -4,7 +4,9 @@ A cooperative browser platformer for **2–4 players**. Cross four worlds, colle
 
 [Play the hosted edition](https://tandem-trails-coop.amar12356.chatgpt.site/)
 
-> The illustrated redesign is live at the hosted link above. GitHub stores the source; updating the hosted Sites edition requires a separate deployment.
+For a contest entry, use [SUBMISSION.md](SUBMISSION.md) and the [plain-language challenge guide](docs/Multiplayer_Game_Challenge_Guide.md). The design notes and improvement history are in [`docs/`](docs/).
+
+> GitHub stores the source. The hosted Sites edition is deployed separately, so pushing to `main` does not automatically publish these changes.
 
 ## Play together
 
@@ -12,6 +14,8 @@ A cooperative browser platformer for **2–4 players**. Cross four worlds, colle
 2. A second player joins. The host chooses an unlocked level and starts.
 3. Collect all four lights, then put two players on switches **A** and **B** at the same time.
 4. Bring everyone through the exit portal. The host can advance to the next level.
+
+Each trail also has two optional fireflies. They sync across the room and do not block the exit. Staying within 350 pixels of a teammate reveals a short bridge over a difficult gap. The first level shows location-based cues as you move. After a clear, the game shows your time, falls, fireflies, and a medal; personal bests are saved on that device. The illustrated campaign map shows unlocked trails and local medals. The [Trail Journal](https://tandem-trails-coop.amar12356.chatgpt.site/trail-journal) explains each world and the cooperative mechanics.
 
 Falls and hazards return you to a checkpoint. The room shares collectibles, gate state and campaign progress. Players control their own movement. Refreshing the page or briefly losing connectivity restores your seat from the saved device session and picks up your last position. Teammates who go idle are marked Away after a few seconds so they cannot hold switches or block the portal for everyone else. If the host goes Away, the earliest-joined active teammate becomes the new host (the same rule used when a host leaves the lobby). Abandoned rooms with no heartbeat for two hours are removed; rejoining then returns a clear expired-room error. The header shows connection state and warns when round-trip updates exceed about 700 ms.
 
@@ -66,6 +70,10 @@ The app requires a local Cloudflare Worker and D1 SQLite database instance; open
    # npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_add_last_seen.sql
    # Existing databases also need completion stats:
    # npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0002_add_completion_stats.sql
+   # Bio storage:
+   # npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0003_add_site_content.sql
+   # Bio ownership:
+   # npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0004_add_content_owner.sql
    ```
 
 4. **Start the local server:**
@@ -86,7 +94,7 @@ The app requires a local Cloudflare Worker and D1 SQLite database instance; open
 
 ## Verify changes
 
-Run the unified test suite, linter, and build pipeline:
+With the local server running in another terminal, run the unified test suite, linter, and build pipeline:
 
 ```sh
 npm test
@@ -97,8 +105,9 @@ npm run build
 The unified `npm test` runs all verification suites:
 1. `npm run test:geometry` – Validates stage geometry, bounding boxes, plate reachability, and platform positioning across all 16 levels.
 2. `npm run test:logic` – Checks progression rules, hazard clearance, world thematic mechanics, and safety margins.
-3. `npm run test:smoke` – Tests live multiplayer room creation, 4-player capacity, shared light pickups, gate switches, completion, unlocks, and host migrations.
-4. `npm run test:campaign` – Traverses all 16 levels end-to-end through the live room API.
+3. `npm run test:auth` – Covers platform identity validation, protected editor redirects, ownership, and malformed or unsafe bio edits.
+4. `npm run test:smoke` – Tests live multiplayer room creation, 4-player capacity, shared light pickups, gate switches, completion, unlocks, and host migrations.
+5. `npm run test:campaign` – Traverses all 16 levels end-to-end through the live room API.
 
 ### Custom test configuration
 To run API smoke and campaign tests against an alternative local port or remote server, pass `TRAILS_BASE_URL`:

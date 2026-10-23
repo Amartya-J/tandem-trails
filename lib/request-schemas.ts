@@ -13,6 +13,7 @@ export const trailRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("restart"), code, token }),
   z.object({ action: z.literal("move"), code, token, x: z.number().finite().min(0).max(1960), y: z.number().finite().min(-150).max(550) }),
   z.object({ action: z.literal("collect"), code, token, shard: z.number().int().min(0).max(3) }),
+  z.object({ action: z.literal("collectOptional"), code, token, index: z.number().int().min(0).max(1) }),
   z.object({ action: z.literal("fall"), code, token }),
   z.object({ action: z.literal("complete"), code, token }),
 ]);
