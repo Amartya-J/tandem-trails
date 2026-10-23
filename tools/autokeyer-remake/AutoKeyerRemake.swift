@@ -8,6 +8,7 @@ final class AutoKeyerApp: NSObject, NSApplicationDelegate {
     private let startItem = NSMenuItem(title: "Type Clipboard in 3 Seconds", action: nil, keyEquivalent: "")
     private let pyCharmItem = NSMenuItem(title: "Type Clipboard in PyCharm", action: nil, keyEquivalent: "")
     private let oneHourItem = NSMenuItem(title: "Type in PyCharm Over 1 Hour", action: nil, keyEquivalent: "")
+    private let fourHourItem = NSMenuItem(title: "Type in PyCharm Over 4 Hours", action: nil, keyEquivalent: "")
     private let pauseItem = NSMenuItem(title: "Pause Typing", action: nil, keyEquivalent: "")
     private let resumeItem = NSMenuItem(title: "Resume in 3 Seconds", action: nil, keyEquivalent: "")
     private let stopItem = NSMenuItem(title: "Stop Typing", action: nil, keyEquivalent: "")
@@ -66,6 +67,9 @@ final class AutoKeyerApp: NSObject, NSApplicationDelegate {
         oneHourItem.target = self
         oneHourItem.action = #selector(startOneHourInPyCharm)
         menu.addItem(oneHourItem)
+        fourHourItem.target = self
+        fourHourItem.action = #selector(startFourHoursInPyCharm)
+        menu.addItem(fourHourItem)
         menu.addItem(.separator())
         pauseItem.target = self
         pauseItem.action = #selector(pauseTyping)
@@ -174,7 +178,7 @@ final class AutoKeyerApp: NSObject, NSApplicationDelegate {
         field.action = #selector(durationValueChanged(_:))
         durationRow.addArrangedSubview(field)
         durationField = field
-        durationRow.addArrangedSubview(label("minutes (60 = 1 hour)", size: 12))
+        durationRow.addArrangedSubview(label("minutes (240 = 4 hours)", size: 12))
         stack.addArrangedSubview(durationRow)
 
         let buttons = NSStackView()
@@ -270,6 +274,10 @@ final class AutoKeyerApp: NSObject, NSApplicationDelegate {
 
     @objc private func startOneHourInPyCharm() {
         beginTyping(inPyCharm: true, durationOverride: 3600)
+    }
+
+    @objc private func startFourHoursInPyCharm() {
+        beginTyping(inPyCharm: true, durationOverride: 4 * 3600)
     }
 
     private func beginTyping(inPyCharm: Bool, durationOverride: TimeInterval?) {
@@ -505,6 +513,7 @@ final class AutoKeyerApp: NSObject, NSApplicationDelegate {
         startItem.isEnabled = phase == .ready
         pyCharmItem.isEnabled = phase == .ready
         oneHourItem.isEnabled = phase == .ready
+        fourHourItem.isEnabled = phase == .ready
         pauseItem.isEnabled = phase == .countdown || phase == .typing
         resumeItem.isEnabled = phase == .paused
         stopItem.isEnabled = phase != .ready
