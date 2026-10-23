@@ -30,6 +30,15 @@ export type Gap = { x: number; w: number };
 export type Shard = { x: number; y: number };
 export type Collectible = { x: number; y: number; type: string };
 export type SyncBridge = { x: number; y: number; w: number };
+export type TempoBridge = { x: number; y: number; w: number; period: number; openFor: number };
+
+/**
+ * A deterministic shared beat. Every client sees the same open window without
+ * needing a new network message, while proximity still makes it cooperative.
+ */
+export function isTempoBridgeActive(bridge: TempoBridge, timeSeconds: number) {
+  return ((timeSeconds + bridge.period * 0.17) % bridge.period) < bridge.openFor;
+}
 
 export function layout(index: number) {
   const level = LEVELS[Math.max(0, Math.min(15, index))];
@@ -46,15 +55,25 @@ export function layout(index: number) {
   ];
   const hazards = [560 + stage * 13, 970 + stage * 9, 1360 + stage * 11];
 
-  // Optional fireflies reward exploration without blocking the exit.
+  // Optional Collectibles: One per level, placed in a slightly harder-to-reach spot
   const optional: Collectible[] = [
-    { x: 650 + stage * 8, y: 310, type: "firefly" },
-    { x: 1780 - stage * 8, y: 300, type: "firefly" },
+    { x: 100 + stage * 5, y: 380, type: "firefly" },
+    { x: 1800 - stage * 10, y: 280, type: "firefly" },
   ];
   // A high alternate route that only becomes solid while a teammate is within Sync Link range.
-  const syncBridge: SyncBridge = { x: 1025 + stage * 7, y: 320 - (world % 2) * 8, w: 142 };
+  const syncBridge: SyncBridge = { x: 1025 + stage * 7, y: 276 - (world % 2) * 12, w: 142 };
+  // A short, rhythmic crossing over the final gap. It is only solid on the beat
+  // while the crew remains linked, giving pairs a small coordination challenge.
+  const finalGap = gaps[3];
+  const tempoBridge: TempoBridge = {
+    x: finalGap.x - 16,
+    y: 334 - (world % 2) * 8,
+    w: finalGap.w + 32,
+    period: 2.4,
+    openFor: 1.05,
+  };
 
-  return { level, gaps, platforms, shards, hazards, optional, syncBridge };
+  return { level, gaps, platforms, shards, hazards, optional, syncBridge, tempoBridge };
 }
 
 export interface TutorialCue {

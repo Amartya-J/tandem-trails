@@ -6,6 +6,19 @@ export const MIN_PLAYERS = 2;
 export const NETWORK_POLL_MS = 220;
 export const POSITION_SEND_MS = 150;
 
+export const TRAIL_TWISTS = {
+  "moon-hop": { label: "MOON HOP", icon: "☾", description: "Low gravity turns every leap into a long, floaty arc." },
+  "crosswind": { label: "CROSSWIND", icon: "≋", description: "A playful gust bends airborne jumps back and forth." },
+  "quickstep": { label: "QUICKSTEP", icon: "✦", description: "The whole crew gets a little extra trail speed." },
+} as const;
+
+export type TrailTwistId = keyof typeof TRAIL_TWISTS;
+
+export type Session = {
+  code: string;
+  token: string;
+};
+
 export type Player = {
   name: string;
   x: number;
@@ -15,6 +28,8 @@ export type Player = {
   lastSeen?: number;
   active?: boolean;
 };
+
+export type PlayerState = Player;
 
 export type Completion = {
   seconds: number;
@@ -31,6 +46,7 @@ export type Room = {
   level: number;
   unlocked: number;
   run: number;
+  trailTwist: TrailTwistId;
   collected: number;
   optionalCollected: number;
   gateOpen: boolean;
@@ -40,3 +56,5 @@ export type Room = {
   players: Player[];
   completion: Completion | null;
 };
+
+export type RoomState = Room;

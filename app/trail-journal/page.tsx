@@ -55,7 +55,7 @@ const MECHANICS = [
   {
     title: "The Sync Link & Proximity",
     icon: "⚡",
-    description: "When you move within 350px of a teammate, a glowing bridge appears over a tricky gap. Stay close to keep the bridge solid.",
+    description: "Staying close to teammates charges the synergy tether. When moving within 350px of each other, your shared energy boosts awareness and visual clarity across the trail.",
   },
   {
     title: "Dual Pressure Plates",
@@ -65,7 +65,7 @@ const MECHANICS = [
   {
     title: "Spirit Lights & Fireflies",
     icon: "✨",
-    description: "Collect all four spirit lights to finish a trail. Two optional fireflies in each level reward curious explorers without blocking the exit.",
+    description: "Four primary spirit lights are required to awaken each zone's gate, while elusive fireflies reward intrepid explorers willing to venture off standard paths.",
   },
   {
     title: "Jump Buffering & Coyote Time",
@@ -80,12 +80,12 @@ const TECH_HIGHLIGHTS = [
     detail: "Synthesized via native Web Audio API oscillators and gain envelopes. Ambient soundscapes and dynamic victory fanfares render in real time without audio file lag.",
   },
   {
-    title: "Canvas 2D Game Engine",
-    detail: "A requestAnimationFrame physics loop draws the characters, parallax scenery, and effects while syncing room state across devices.",
+    title: "60 FPS Native Canvas 2D Engine",
+    detail: "Custom requestAnimationFrame physics pipeline with sub-pixel particle rendering, dynamic parallax scenery, and adaptive screen shake decay.",
   },
   {
     title: "Accessible & Responsive Everywhere",
-    detail: "Includes screen-reader status updates, custom touch control layouts, keyboard focus indicators, and reduced-motion support.",
+    detail: "Engineered with WCAG 2.2 standards, dynamic screen-reader ARIA live regions, custom touch control layouts, and full reduced-motion support.",
   },
 ];
 
@@ -252,7 +252,7 @@ export default function TrailJournalPage() {
           <div className="pt-2">
             <Link
               href="/"
-              className="ui-btn inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-b from-[#ffe982] to-[#f1b93f] text-[#1a2a34] font-black text-sm tracking-wide shadow-lg hover:brightness-110 active:translate-y-0.5 transition-all"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-b from-[#ffe982] to-[#f1b93f] text-[#1a2a34] font-black text-sm tracking-wide shadow-lg hover:brightness-110 active:translate-y-0.5 transition-all"
             >
               LAUNCH GAME LOBBY →
             </Link>
@@ -263,7 +263,7 @@ export default function TrailJournalPage() {
       {/* Footer */}
       <footer className="border-t border-[#ffffff15] py-8 text-center text-xs text-[#cbd8c7]/60 space-y-2">
         <p>TANDEM TRAILS · AN ORIGINAL COOPERATIVE PLATFORM ADVENTURE</p>
-        <p>Crafted for synchronous teamwork with no sign-in or installation.</p>
+        <p>Crafted for synchronous teamwork with zero external dependencies.</p>
       </footer>
     </main>
   );

@@ -13,9 +13,10 @@
     "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
-    "test": "npm run test:geometry && npm run test:logic && npm run test:smoke && npm run test:campaign",
+    "test": "npm run test:geometry && npm run test:logic && npm run test:auth && npm run test:smoke && npm run test:campaign",
     "test:geometry": "node --experimental-strip-types tests/geometry-smoke.mjs",
     "test:logic": "node --experimental-strip-types tests/logic-smoke.mjs",
+    "test:auth": "node tests/auth-smoke.mjs",
     "test:smoke": "node tests/room-smoke.mjs",
     "test:campaign": "node --experimental-strip-types tests/campaign-smoke.mjs"
   },

@@ -118,6 +118,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visibl
 .stage-footer span:first-child { color: #ffe36c; }
 .sync-status { color: #9eb5aa; transition: color .2s, text-shadow .2s; }
 .sync-status.linked { color: #ffe673; text-shadow: 0 0 10px #ffe67399; }
+.trail-twist-status { border-color: #ffe67388; color: #fff0b0; background: #fff2a112; font-size: 7px; letter-spacing: .8px; white-space: nowrap; }
 .tutorial-cue { position: absolute; left: 50%; bottom: 20px; z-index: 4; display: grid; gap: 4px; width: min(440px, calc(100% - 24px)); padding: 11px 16px; transform: translateX(-50%); border: 1px solid #ffe9a286; border-radius: 14px; background: #092738e8; color: #f8f5dc; text-align: center; box-shadow: 0 8px 28px #03131cb8; pointer-events: none; }
 .tutorial-cue strong { color: #ffe578; font-size: 11px; letter-spacing: 1px; }
 .tutorial-cue span { font-size: 11px; }
