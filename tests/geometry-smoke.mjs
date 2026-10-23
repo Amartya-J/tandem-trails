@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { FLOOR, isGround, layout, LEVELS, PLATES, EXIT_X, WORLD_WIDTH, WORLDS } from '../lib/levels.ts';
+import { FLOOR, isGround, isTempoBridgeActive, layout, LEVELS, PLATES, EXIT_X, WORLD_WIDTH, WORLDS } from '../lib/levels.ts';
 
 console.log('Testing level geometry for all 16 levels across 4 worlds...');
 
@@ -7,7 +7,7 @@ assert.equal(WORLDS.length, 4, 'Should have 4 distinct worlds');
 assert.equal(LEVELS.length, 16, 'Should have 16 total levels');
 
 for (let i = 0; i < 16; i++) {
-  const { level, gaps, platforms, shards, hazards } = layout(i);
+  const { level, gaps, platforms, shards, hazards, syncBridge, tempoBridge } = layout(i);
   
   // Basic level properties
   assert.equal(level.index, i, `Level index should be ${i}`);
@@ -40,6 +40,18 @@ for (let i = 0; i < 16; i++) {
     assert.ok(platform.y >= 100 && platform.y <= FLOOR, `Platform y=${platform.y} must be between 100 and FLOOR`);
     assert.ok(platform.w > 30, `Platform width ${platform.w} must be wide enough to land on`);
   }
+
+  // Sync Link shortcut: optional bridge must always be a safe, in-bounds landing route.
+  assert.ok(syncBridge.x >= 0 && syncBridge.x + syncBridge.w <= WORLD_WIDTH, `Sync bridge in level ${i} must be within world bounds`);
+  assert.ok(syncBridge.y >= 100 && syncBridge.y < FLOOR, `Sync bridge in level ${i} must sit above the ground`);
+  assert.ok(syncBridge.w >= 100, `Sync bridge in level ${i} must be wide enough for co-op timing`);
+
+  // Harmony Step: a deterministic, co-op-only timed route over the last gap.
+  assert.ok(tempoBridge.x >= 0 && tempoBridge.x + tempoBridge.w <= WORLD_WIDTH, `Tempo bridge in level ${i} must be within world bounds`);
+  assert.ok(tempoBridge.y >= 100 && tempoBridge.y < FLOOR, `Tempo bridge in level ${i} must sit above the ground`);
+  assert.ok(tempoBridge.w >= gaps[3].w, `Tempo bridge in level ${i} must cross the final gap`);
+  assert.ok(tempoBridge.period > tempoBridge.openFor && tempoBridge.openFor > 0, `Tempo bridge in level ${i} must have a valid beat window`);
+  assert.equal(typeof isTempoBridgeActive(tempoBridge, 0), 'boolean', `Tempo bridge in level ${i} must calculate a deterministic state`);
 
   // Shards (Lights)
   assert.equal(shards.length, 4, `Level ${i}: Must contain exactly 4 shards`);

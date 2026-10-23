@@ -66,6 +66,10 @@ The app requires a local Cloudflare Worker and D1 SQLite database instance; open
    # npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_add_last_seen.sql
    # Existing databases also need completion stats:
    # npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0002_add_completion_stats.sql
+   # Bio storage:
+   # npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0003_add_site_content.sql
+   # Bio ownership:
+   # npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0004_add_content_owner.sql
    ```
 
 4. **Start the local server:**
@@ -97,8 +101,9 @@ npm run build
 The unified `npm test` runs all verification suites:
 1. `npm run test:geometry` – Validates stage geometry, bounding boxes, plate reachability, and platform positioning across all 16 levels.
 2. `npm run test:logic` – Checks progression rules, hazard clearance, world thematic mechanics, and safety margins.
-3. `npm run test:smoke` – Tests live multiplayer room creation, 4-player capacity, shared light pickups, gate switches, completion, unlocks, and host migrations.
-4. `npm run test:campaign` – Traverses all 16 levels end-to-end through the live room API.
+3. `npm run test:auth` – Covers platform identity validation, protected editor redirects, ownership, and malformed or unsafe bio edits.
+4. `npm run test:smoke` – Tests live multiplayer room creation, 4-player capacity, shared light pickups, gate switches, completion, unlocks, and host migrations.
+5. `npm run test:campaign` – Traverses all 16 levels end-to-end through the live room API.
 
 ### Custom test configuration
 To run API smoke and campaign tests against an alternative local port or remote server, pass `TRAILS_BASE_URL`:

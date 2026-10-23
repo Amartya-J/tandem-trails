@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { TRAIL_TWISTS } from '../lib/game-types.ts';
 const base = new URL('/api/trails',process.env.TRAILS_BASE_URL || 'http://127.0.0.1:8787');
 async function post(action, session={}, extra={}) { const response=await fetch(base,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...session,...extra})}); return {status:response.status,data:await response.json()}; }
 async function get(session) { const u=new URL(base);u.searchParams.set('code',session.code);const response=await fetch(u,{headers:{'X-Trail-Token':session.token}});return {status:response.status,data:await response.json()}; }
@@ -7,7 +8,10 @@ const host=(await post('create',{}, {name:'Trail Host'})).data;assert.ok(host.co
 const attempts=await Promise.all(Array.from({length:6},(_,i)=>post('join',{}, {code:host.code,name:`Friend ${i}`})));
 const guests=attempts.filter(r=>r.status===200).map(r=>r.data);assert.equal(guests.length,3,'room must cap at four people');
 const nonHostStart=await post('start',guests[0],{level:0});assert.equal(nonHostStart.status,403);assert.equal(nonHostStart.data.code,'NOT_HOST');
+assert.equal((await post('move',host,{x:Infinity,y:388})).status,400,'non-finite positions are rejected');
+assert.equal((await post('move',host,{x:2001,y:388})).status,400,'out-of-bounds positions are rejected');
 const started=await post('start',host,{level:0});assert.equal(started.status,200);assert.equal(started.data.players.length,4);assert.equal(started.data.phase,'active');
+assert.ok(started.data.trailTwist in TRAIL_TWISTS,'each run receives a valid shared Trail Twist');
 // Reconnect restores the same device session (refresh / temporary network loss).
 const reconnected=await post('reconnect',host);assert.equal(reconnected.status,200);assert.equal(reconnected.data.phase,'active');assert.equal(reconnected.data.isHost,true);assert.equal(reconnected.data.players[reconnected.data.meIndex].isHost,true);
 assert.equal((await get(host)).status,200,'saved token must keep working after reconnect');
@@ -35,7 +39,10 @@ const done=await post('complete',guests[2]);assert.equal(done.status,200);assert
 assert.equal(done.data.completion.lights,4);assert.equal(done.data.completion.players.length,4);assert.ok(Number.isInteger(done.data.completion.seconds));
 assert.equal((await post('start',host,{level:2})).status,400,'locked levels remain closed');
 const next=await post('start',host,{level:1});assert.equal(next.status,200);assert.equal(next.data.level,1);assert.equal(next.data.collected,0);assert.equal(next.data.gateOpen,false);
-const run=next.data.run;const restarted=await post('restart',host);assert.equal(restarted.data.run,run+1);
+const run=next.data.run;const previousTwist=next.data.trailTwist;const restarted=await post('restart',host);assert.equal(restarted.data.run,run+1);
+assert.ok(restarted.data.trailTwist in TRAIL_TWISTS,'restarted runs receive a valid Trail Twist');
+assert.notEqual(restarted.data.trailTwist,previousTwist,'a replay rerolls its Trail Twist');
+assert.equal((await post('restart',guests[0])).status,403,'only the host can restart a shared run');
 const transfer=(await post('create',{}, {name:'Departing Host'})).data;const successor=(await post('join',{}, {code:transfer.code,name:'Successor'})).data;
 assert.equal((await post('leave',transfer)).status,200);assert.equal((await get(successor)).data.isHost,true);
 

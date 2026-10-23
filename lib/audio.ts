@@ -275,34 +275,91 @@ class SoundManager {
   }
 
   public playComplete(): void {
+    this.playVictoryFanfare();
+  }
+
+  public playVictoryFanfare(world: number = 0): void {
     if (this.muted) return;
     const ctx = this.initCtx();
     if (!ctx) return;
     try {
-      const melody = [
-        { f: 523.25, d: 0.1 },  // C5
-        { f: 659.25, d: 0.1 },  // E5
-        { f: 783.99, d: 0.1 },  // G5
-        { f: 1046.5, d: 0.28 }, // C6
-      ];
+      // World-tuned victory arpeggio roots
+      const worldRoots: Record<number, number[]> = {
+        0: [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98], // C major flourish
+        1: [587.33, 739.99, 880.00, 1174.66, 1479.98, 1760.00], // D major triumphant
+        2: [440.00, 554.37, 659.25, 880.00, 1108.73, 1318.51],  // A major crystalline
+        3: [659.25, 830.61, 987.77, 1318.51, 1661.22, 1975.53], // E major celestial
+      };
+
+      const notes = worldRoots[world % 4] || worldRoots[0];
+      const now = ctx.currentTime;
       let offset = 0;
-      melody.forEach(note => {
+
+      // Ascending arpeggio flourish
+      notes.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        const start = ctx.currentTime + offset;
+        const start = now + offset;
+        const dur = idx === notes.length - 1 ? 0.75 : 0.12;
 
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(note.f, start);
+        osc.type = idx % 2 === 0 ? "triangle" : "sine";
+        osc.frequency.setValueAtTime(freq, start);
 
-        gain.gain.setValueAtTime(0.16, start);
-        gain.gain.exponentialRampToValueAtTime(0.001, start + note.d);
+        gain.gain.setValueAtTime(0.18, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
 
         osc.connect(gain);
         gain.connect(this.ensureSfxGain(ctx));
 
         osc.start(start);
-        osc.stop(start + note.d + 0.05);
-        offset += note.d * 0.85;
+        osc.stop(start + dur + 0.05);
+        offset += 0.09;
+      });
+
+      // Sustained grand resolution chord at climax
+      const chordNotes = [notes[0] / 2, notes[2] / 2, notes[3], notes[5] || notes[3] * 1.5];
+      const chordStart = now + offset - 0.02;
+      chordNotes.forEach(freq => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, chordStart);
+
+        gain.gain.setValueAtTime(0.12, chordStart);
+        gain.gain.exponentialRampToValueAtTime(0.001, chordStart + 1.2);
+
+        osc.connect(gain);
+        gain.connect(this.ensureSfxGain(ctx));
+
+        osc.start(chordStart);
+        osc.stop(chordStart + 1.25);
+      });
+    } catch {}
+  }
+
+  public playSyncChime(): void {
+    if (this.muted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      [880, 1318.51, 1760].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const start = now + idx * 0.05;
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, start);
+
+        gain.gain.setValueAtTime(0.12, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.ensureSfxGain(ctx));
+
+        osc.start(start);
+        osc.stop(start + 0.38);
       });
     } catch {}
   }

@@ -99,7 +99,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visibl
 .in-room::before { opacity: .16; filter: saturate(.8); }
 .in-room::after { background: radial-gradient(circle at 35% 25%, #1b526055, transparent 38%), #061725e8; }
 .in-room .overview { display: none; }
-.in-room .main-grid { display: grid; grid-template-columns: minmax(0, 1fr) 285px; gap: 26px; padding-top: 25px; }
+.in-room .main-grid { display: grid; grid-template-columns: minmax(0, 1fr) 410px; gap: 26px; padding-top: 25px; }
 .in-room .side-card { width: auto; min-width: 0; padding: 20px; border: 1px solid #fff0b733; border-radius: 20px; background: linear-gradient(160deg, #0d2c3cdb, #081d2be8); box-shadow: 0 20px 50px #02091199, inset 0 1px #ffffff17; backdrop-filter: blur(14px); }
 .stage-card { min-width: 0; align-self: start; overflow: hidden; border: 1px solid #ffe8a24a; border-radius: 20px; background: #061525; box-shadow: 0 28px 70px #020810cc, 0 0 0 5px #102c3b99, inset 0 1px #ffffff20; }
 .canvas-wrap { position: relative; overflow: hidden; }
@@ -116,6 +116,9 @@ button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visibl
 .stage-header strong b { color: #6ccebb; }
 .stage-footer { border-top: 1px solid #fff4be24; background: #081c2a; }
 .stage-footer span:first-child { color: #ffe36c; }
+.sync-status { margin-left: 1rem; color: #9eb5aa; transition: color .2s, text-shadow .2s; }
+.sync-status.linked { color: #ffe673; text-shadow: 0 0 10px #ffe67399; }
+.trail-twist-status { border-color: #ffe67388; color: #fff0b0; background: #fff2a112; font-size: 7px; letter-spacing: .8px; white-space: nowrap; }
 .status-light { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #76e8bd; box-shadow: 0 0 12px #76e8bd; animation: pulse 1.8s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .45; transform: scale(.78); } }
 .panel-tag { margin: 0; color: #9fd4c2; font-size: 8px; font-weight: 900; letter-spacing: 2px; }
@@ -219,6 +222,8 @@ button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visibl
   gap: 12px;
   margin-bottom: 24px;
 }
+.challenge-ribbons { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 13px; }
+.challenge-ribbons span { padding: 5px 8px; border: 1px solid #ffe36c8c; border-radius: 999px; color: #ffe78a; background: #5a401833; font-size: 8px; font-weight: 900; letter-spacing: .8px; box-shadow: inset 0 1px #fff7c83d; }
 .stat-item {
   display: flex;
   flex-direction: column;

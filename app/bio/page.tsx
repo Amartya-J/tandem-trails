@@ -1,35 +1,42 @@
-import fs from "fs";
-import path from "path";
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
+type BioResponse = { content?: string };
+
 export default function BioPage() {
-  const bioPath = path.join(process.cwd(), "bio.md");
-  let bioContent = "No bio provided yet.";
-  
-  try {
-    if (fs.existsSync(bioPath)) {
-      bioContent = fs.readFileSync(bioPath, "utf8");
-    }
-  } catch (e) {
-    console.error("Error reading bio.md:", e);
-  }
+  const [content, setContent] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/bio")
+      .then(async response => {
+        if (!response.ok) throw new Error("Unable to load bio");
+        const data = await response.json() as BioResponse;
+        setContent(data.content || "No bio provided yet.");
+      })
+      .catch(() => setError(true));
+  }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white font-sans p-4">
-      <div className="max-w-2xl w-full bg-slate-800 p-8 rounded-2xl shadow-xl">
-        <h1 className="text-4xl font-bold mb-6 text-blue-400 border-b border-slate-700 pb-4">Bio</h1>
-        <div className="prose prose-invert max-w-none whitespace-pre-wrap text-slate-300 leading-relaxed">
-          {bioContent}
+    <main className="min-h-screen bg-slate-900 p-4 font-sans text-white">
+      <section className="mx-auto flex min-h-screen w-full max-w-2xl items-center">
+        <div className="w-full rounded-2xl bg-slate-800 p-6 shadow-xl sm:p-8">
+          <header className="mb-6 flex items-center justify-between border-b border-slate-700 pb-4">
+            <h1 className="text-4xl font-bold text-blue-400">Bio</h1>
+            <Link href="/bio/edit" className="ui-btn ui-btn-sm ui-btn-ghost text-slate-300">EDIT BIO</Link>
+          </header>
+          {error ? (
+            <p className="rounded-field border border-error/60 bg-error/15 p-3 text-sm text-error">The bio could not be loaded. Please try again.</p>
+          ) : content === null ? (
+            <div className="flex min-h-40 items-center justify-center"><span className="text-sm text-primary" aria-live="polite">Loading bio…</span></div>
+          ) : (
+            <article className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-300 sm:text-base">{content}</article>
+          )}
+          <footer className="mt-8 border-t border-slate-700 pt-6"><Link href="/" className="ui-btn ui-btn-primary">Back to Adventure</Link></footer>
         </div>
-        <div className="mt-8 pt-6 border-t border-slate-700">
-          <Link 
-            href="/" 
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full font-semibold transition-colors inline-block"
-          >
-            Back to Adventure
-          </Link>
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
