@@ -31,6 +31,8 @@ export type Shard = { x: number; y: number };
 export type Collectible = { x: number; y: number; type: string };
 export type SyncBridge = { x: number; y: number; w: number };
 export type TempoBridge = { x: number; y: number; w: number; period: number; openFor: number };
+export type RelaySwitch = { x: number; y: number };
+export type TrailCrateStart = { x: number; y: number };
 
 /**
  * A deterministic shared beat. Every client sees the same open window without
@@ -72,8 +74,12 @@ export function layout(index: number) {
     period: 2.4,
     openFor: 1.05,
   };
+  // One crew member holds this relay while the others cross the Harmony Step.
+  const relaySwitch: RelaySwitch = { x: 1610 + stage * 4, y: FLOOR };
+  // A shared object can be carried between players; its authoritative state lives in the room.
+  const trailCrate: TrailCrateStart = { x: 1040 + stage * 7, y: FLOOR - 22 };
 
-  return { level, gaps, platforms, shards, hazards, optional, syncBridge, tempoBridge };
+  return { level, gaps, platforms, shards, hazards, optional, syncBridge, tempoBridge, relaySwitch, trailCrate };
 }
 
 export interface TutorialCue {

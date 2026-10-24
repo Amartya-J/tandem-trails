@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { EXIT_X, PLATES, layout } from "@/lib/levels";
-import { TRAIL_TWISTS, type Completion, type Player, type Room, type TrailTwistId } from "@/lib/game-types";
+import { ROOM_STATE_VERSION, TRAIL_TWISTS, type Completion, type Player, type Room, type RoomEvent, type TrailTwistId } from "@/lib/game-types";
 import { getDb } from "@/db";
 import { rooms as roomRows, trailSessions } from "@/db/schema";
 
 type ServerPlayer = Player & { active: boolean; lastSeen: number };
-type ServerRoom = Pick<Room, "code" | "phase" | "level" | "unlocked" | "run" | "collected" | "optionalCollected" | "gateOpen" | "trailTwist"> & {
+type ServerRoom = Pick<Room, "code" | "phase" | "level" | "unlocked" | "run" | "collected" | "optionalCollected" | "gateOpen" | "relayActive" | "crate" | "trailTwist"> & {
   falls: number;
   players: ServerPlayer[];
   completion: Completion | null;
+  events: RoomEvent[];
   startedAt?: number;
 };
 type RequestData = Record<string, unknown>;
@@ -26,6 +27,10 @@ async function loadRoom(code: string) {
   if (!row?.stateJson) return undefined;
   try {
     const room = JSON.parse(row.stateJson) as ServerRoom;
+    // Preserve compatibility with rooms created before the cooperative-expansion fields existed.
+    room.events ??= [];
+    room.relayActive ??= false;
+    room.crate ??= { ...layout(room.level).trailCrate };
     rooms.set(code, room);
     return room;
   } catch {
@@ -72,6 +77,11 @@ function refreshActivity(room: ServerRoom) {
   const now = Date.now();
   for (const player of room.players) {
     player.active = now - player.lastSeen <= ACTIVE_WINDOW_MS;
+    if (player.downedUntil && player.downedUntil <= now) {
+      delete player.downedUntil;
+      player.x = 80;
+      player.y = 388;
+    }
   }
 
   const host = room.players.find(player => player.isHost);
@@ -82,6 +92,10 @@ function refreshActivity(room: ServerRoom) {
       nextHost.isHost = true;
     }
   }
+}
+
+function recordEvent(room: ServerRoom, event: Omit<RoomEvent, "at">) {
+  room.events = [...(room.events ?? []), { ...event, at: Date.now() }].slice(-12);
 }
 
 function isNear(player: { x: number; y: number }, target: { x: number; y: number }, radius = 52) {
@@ -96,16 +110,23 @@ function validName(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0 && value.trim().length <= MAX_NAME_LENGTH;
 }
 
+function avatarOf(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value < 4 ? value : fallback;
+}
+
 function updateGate(room: ServerRoom) {
   const activePlayers = room.players.filter(player => player.active);
   if (PLATES.every(plate => activePlayers.some(player => Math.abs(player.x + 17 - plate) <= 48))) {
     room.gateOpen = true;
   }
+  const relay = layout(room.level).relaySwitch;
+  room.relayActive = activePlayers.some(player => !player.downedUntil && Math.abs(player.x + 17 - relay.x) <= 34 && player.y > 360);
 }
 
 function sanitizeRoom(room: ServerRoom, meIndex: number) {
   return {
     ...room,
+    stateVersion: ROOM_STATE_VERSION,
     meIndex,
     isHost: room.players[meIndex]?.isHost ?? false,
     playerCount: room.players.length,
@@ -187,8 +208,11 @@ export async function POST(req: Request) {
       collected: 0,
       optionalCollected: 0,
       gateOpen: false,
-      players: [{ name: validName(requestPayload.name) ? requestPayload.name.trim() : "Host", x: 80, y: 388, color: 0, isHost: true, active: true, lastSeen: Date.now() }],
+      relayActive: false,
+      crate: { ...layout(0).trailCrate },
+      players: [{ name: validName(requestPayload.name) ? requestPayload.name.trim() : "Host", x: 80, y: 388, color: 0, avatar: avatarOf(requestPayload.avatar, 0), isHost: true, active: true, lastSeen: Date.now() }],
       completion: null,
+      events: [],
     };
     await getDb().insert(roomRows).values({ code: newCode, hostToken: newToken, phase: room.phase, level: room.level, unlocked: room.unlocked, run: room.run, collected: room.collected, gateOpen: 0, startedAt: null, falls: 0, createdAt: Date.now(), stateJson: JSON.stringify(room) });
     await saveSession({ code: newCode, playerIndex: 0, token: newToken });
@@ -205,7 +229,9 @@ export async function POST(req: Request) {
 
     const newToken = Math.random().toString(36).substring(2, 12);
     const pIdx = room.players.length;
-    room.players.push({ name: validName(requestPayload.name) ? requestPayload.name.trim() : `Player ${pIdx + 1}`, x: 80, y: 388, color: pIdx, isHost: false, active: true, lastSeen: Date.now() });
+    const joinerName = validName(requestPayload.name) ? requestPayload.name.trim() : `Player ${pIdx + 1}`;
+    room.players.push({ name: joinerName, x: 80, y: 388, color: pIdx, avatar: avatarOf(requestPayload.avatar, pIdx), isHost: false, active: true, lastSeen: Date.now() });
+    recordEvent(room, { type: "crew-joined", actor: joinerName });
     await saveRoom(room);
     await saveSession({ code: targetCode, playerIndex: pIdx, token: newToken });
     return NextResponse.json({ session: { code: targetCode, token: newToken }, code: targetCode, token: newToken, room: sanitizeRoom(room, pIdx) });
@@ -234,12 +260,16 @@ export async function POST(req: Request) {
 
   if (action === "poll") {
     await saveRoom(room);
-    return NextResponse.json({ room: sanitizeRoom(room, sess.playerIndex), latency: Math.random() * 80 });
+    return NextResponse.json({ room: sanitizeRoom(room, sess.playerIndex) });
   }
 
   if (action === "move") {
     const x = requestPayload.x, y = requestPayload.y;
-    if (me && isValidPosition(x, y) && typeof x === "number" && typeof y === "number") { me.x = x; me.y = y; }
+    if (me?.downedUntil) return NextResponse.json({ error: "Wait for a teammate to rescue you", code: "DOWNED" }, { status: 409 });
+    if (me && isValidPosition(x, y) && typeof x === "number" && typeof y === "number") {
+      me.x = x; me.y = y;
+      if (room.crate?.carrier === sess.playerIndex) { room.crate.x = x + 38; room.crate.y = y + 18; }
+    }
     updateGate(room);
     await saveRoom(room);
     return NextResponse.json({ success: true, ...sanitizeRoom(room, sess.playerIndex) });
@@ -252,7 +282,9 @@ export async function POST(req: Request) {
     if (!me || !shard || !isNear(me, shard)) {
       return NextResponse.json({ error: "Move closer to the spirit light", code: "OUT_OF_RANGE" }, { status: 409 });
     }
+    const wasCollected = room.collected;
     room.collected |= (1 << shardIndex);
+    if (wasCollected !== room.collected) recordEvent(room, { type: "light-collected", actor: me.name });
     await saveRoom(room);
     return NextResponse.json({ room: sanitizeRoom(room, sess.playerIndex), ...sanitizeRoom(room, sess.playerIndex) });
   }
@@ -272,6 +304,35 @@ export async function POST(req: Request) {
   if (action === "fall") {
     if (room.phase !== "active") return NextResponse.json({ error: "Level not active", code: "NOT_ACTIVE" }, { status: 409 });
     room.falls = (room.falls || 0) + 1;
+    if (me) me.downedUntil = Date.now() + 5_000;
+    await saveRoom(room);
+    return NextResponse.json({ room: sanitizeRoom(room, sess.playerIndex), ...sanitizeRoom(room, sess.playerIndex) });
+  }
+
+  if (action === "carry") {
+    if (!me || room.phase !== "active") return NextResponse.json({ error: "The trail is not active", code: "NOT_ACTIVE" }, { status: 409 });
+    if (room.crate.carrier === sess.playerIndex) {
+      delete room.crate.carrier;
+      room.crate.x = me.x + 38;
+      room.crate.y = me.y + 18;
+    } else {
+      if (room.crate.carrier !== undefined) return NextResponse.json({ error: "A teammate is carrying the Trail Crate", code: "IN_USE" }, { status: 409 });
+      if (!isNear(me, room.crate, 70)) return NextResponse.json({ error: "Move closer to the Trail Crate", code: "OUT_OF_RANGE" }, { status: 409 });
+      room.crate.carrier = sess.playerIndex;
+    }
+    await saveRoom(room);
+    return NextResponse.json({ room: sanitizeRoom(room, sess.playerIndex), ...sanitizeRoom(room, sess.playerIndex) });
+  }
+
+  if (action === "rescue") {
+    const targetIndex = typeof requestPayload.targetIndex === "number" ? requestPayload.targetIndex : -1;
+    const target = room.players[targetIndex];
+    if (!me || !target || !target.downedUntil || !isNear(me, target, 74)) {
+      return NextResponse.json({ error: "Stand beside a downed teammate to rescue them", code: "OUT_OF_RANGE" }, { status: 409 });
+    }
+    delete target.downedUntil;
+    target.x = Math.min(1950, me.x + 42);
+    target.y = me.y;
     await saveRoom(room);
     return NextResponse.json({ room: sanitizeRoom(room, sess.playerIndex), ...sanitizeRoom(room, sess.playerIndex) });
   }
@@ -292,6 +353,7 @@ export async function POST(req: Request) {
       players: room.players.map(p => p.name),
       newlyUnlocked: room.unlocked,
     };
+    recordEvent(room, { type: "trail-cleared", actor: me?.name });
     await saveRoom(room);
     return NextResponse.json({ room: sanitizeRoom(room, sess.playerIndex), ...sanitizeRoom(room, sess.playerIndex), completion: room.completion });
   }
@@ -309,7 +371,10 @@ export async function POST(req: Request) {
     room.optionalCollected = 0;
     room.falls = 0;
     room.gateOpen = false;
+    room.relayActive = false;
+    room.crate = { ...layout(requestedLevel).trailCrate };
     room.completion = null;
+    recordEvent(room, { type: "trail-started", actor: me.name });
     await saveRoom(room);
     return NextResponse.json({ room: sanitizeRoom(room, sess.playerIndex), ...sanitizeRoom(room, sess.playerIndex) });
   }
@@ -322,6 +387,8 @@ export async function POST(req: Request) {
     room.optionalCollected = 0;
     room.falls = 0;
     room.gateOpen = false;
+    room.relayActive = false;
+    room.crate = { ...layout(room.level).trailCrate };
     room.startedAt = Date.now();
     room.completion = null;
     await saveRoom(room);

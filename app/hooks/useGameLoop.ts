@@ -3,8 +3,8 @@ import { layout, isGround, isTempoBridgeActive, WORLD_WIDTH, FLOOR, EXIT_X, WORL
 import { sounds } from "@/lib/audio";
 import { POSITION_SEND_MS, SPAWN, type Player, type Room } from "@/lib/game-types";
 
-export type Hero = { x: number; y: number; vx: number; vy: number; ground: boolean; checkpoint: number; jumpLatch: boolean; jumpBuffer: number; coyote: number; grace: number };
-export const NEW_HERO = (): Hero => ({ x: SPAWN.x, y: SPAWN.y, vx: 0, vy: 0, ground: true, checkpoint: SPAWN.x, jumpLatch: false, jumpBuffer: 0, coyote: 0, grace: 0 });
+export type Hero = { x: number; y: number; vx: number; vy: number; ground: boolean; checkpoint: number; jumpLatch: boolean; jumpBuffer: number; coyote: number; grace: number; downed: boolean; downedAt: number };
+export const NEW_HERO = (): Hero => ({ x: SPAWN.x, y: SPAWN.y, vx: 0, vy: 0, ground: true, checkpoint: SPAWN.x, jumpLatch: false, jumpBuffer: 0, coyote: 0, grace: 0, downed: false, downedAt: 0 });
 
 export type Particle = {
   x: number;
@@ -27,6 +27,8 @@ export function useGameLoop(
   onCollectOptional: (index: number) => void,
   onComplete: () => void,
   onFall: () => void,
+  onCarry: () => void,
+  onRescue: (targetIndex: number) => void,
   setAnnouncement: (msg: string) => void
 ) {
   const heroRef = useRef<Hero>(NEW_HERO());
@@ -40,11 +42,16 @@ export function useGameLoop(
   const finishRef = useRef(false);
   const lastCueIdRef = useRef<string | null>(null);
   const platesStateRef = useRef<{ a: boolean; b: boolean; timeA: number; timeB: number; syncedChime: boolean }>({ a: false, b: false, timeA: 0, timeB: 0, syncedChime: false });
+  const onCarryRef = useRef(onCarry);
+  const onRescueRef = useRef(onRescue);
+
+  useEffect(() => { onCarryRef.current = onCarry; }, [onCarry]);
+  useEffect(() => { onRescueRef.current = onRescue; }, [onRescue]);
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
       if (/INPUT|TEXTAREA|SELECT/.test((event.target as HTMLElement).tagName)) return;
-      if (["ArrowLeft","ArrowRight","ArrowUp","Space","KeyA","KeyD","KeyW"].includes(event.code)) {
+      if (["ArrowLeft","ArrowRight","ArrowUp","Space","KeyA","KeyD","KeyW","KeyE","KeyR"].includes(event.code)) {
         event.preventDefault();
         keysRef.current.add(event.code);
       }
@@ -59,6 +66,7 @@ export function useGameLoop(
     let frame: number;
     let last = 0;
     let lastSend = 0, lastCollect = 0;
+    let carryLatch = false, rescueLatch = false;
 
     const tick = (now: number) => {
       if (document.hidden) { frame = requestAnimationFrame(tick); return; }
@@ -88,6 +96,21 @@ export function useGameLoop(
         const keys = keysRef.current;
         const touches = touchRef.current;
 
+        const self = room.players[room.meIndex];
+        if (hero.downed) {
+          if (now - hero.downedAt > 500 && !self?.downedUntil) {
+            hero.downed = false;
+            hero.x = self?.x ?? SPAWN.x;
+            hero.y = self?.y ?? SPAWN.y;
+            hero.vx = 0;
+            hero.vy = 0;
+            hero.grace = now + 1500;
+            setAnnouncement("Back on the trail!");
+          }
+          frame = requestAnimationFrame(tick);
+          return;
+        }
+
         const gamepad = typeof navigator.getGamepads === "function" ? navigator.getGamepads()[0] : null;
         const padLeft = !!gamepad && gamepad.axes[0] < -0.35;
         const padRight = !!gamepad && gamepad.axes[0] > 0.35;
@@ -96,6 +119,8 @@ export function useGameLoop(
         const left = keys.has("ArrowLeft") || keys.has("KeyA") || touches.has("left") || padLeft;
         const right = keys.has("ArrowRight") || keys.has("KeyD") || touches.has("right") || padRight;
         const jump = keys.has("Space") || keys.has("ArrowUp") || keys.has("KeyW") || touches.has("jump") || padJump;
+        const carry = keys.has("KeyE");
+        const rescue = keys.has("KeyR");
 
         const twist = room.trailTwist;
         const targetVx = (Number(right) - Number(left)) * (twist === "quickstep" ? 325 : 280);
@@ -135,7 +160,7 @@ export function useGameLoop(
           if (playerIndex === room.meIndex || player.active === false) return false;
           return Math.hypot(player.x - hero.x, player.y - hero.y) <= 350;
         });
-        const tempoActive = syncLinked && isTempoBridgeActive(levelData.tempoBridge, now / 1000);
+        const tempoActive = syncLinked && room.relayActive && isTempoBridgeActive(levelData.tempoBridge, now / 1000);
         const collisionPlatforms = [
           ...levelData.platforms,
           ...(syncLinked ? [{ ...levelData.syncBridge, spring: false }] : []),
@@ -161,14 +186,21 @@ export function useGameLoop(
         if (hero.x > 1620 && hero.checkpoint < 1620) hero.checkpoint = 1620;
 
         if (hero.y > 545 || (now > hero.grace && levelData.hazards.some(x => Math.abs(hero.x + 17 - x) < 20 && hero.y + 42 > FLOOR - 24))) {
-          hero.x = hero.checkpoint;
-          hero.y = 388;
+          hero.downed = true;
+          hero.downedAt = now;
+          hero.vx = 0;
           hero.vy = 0;
-          hero.grace = now + 1500;
           sounds.playFall();
           shakeRef.current = 5;
           onFall();
+          setAnnouncement("You are down! A teammate can stand nearby and press R to rescue you.");
         }
+
+        if (carry && !carryLatch && room.crate && Math.hypot(hero.x + 17 - room.crate.x, hero.y + 22 - room.crate.y) < 80) onCarryRef.current();
+        carryLatch = carry;
+        const rescueTarget = room.players.findIndex((player, playerIndex) => playerIndex !== room.meIndex && player.downedUntil && Math.hypot(hero.x - player.x, hero.y - player.y) < 80);
+        if (rescue && !rescueLatch && rescueTarget >= 0) onRescueRef.current(rescueTarget);
+        rescueLatch = rescue;
 
         if (now - lastSend > POSITION_SEND_MS) {
           lastSend = now;

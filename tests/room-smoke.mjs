@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { TRAIL_TWISTS } from '../lib/game-types.ts';
+import { layout } from '../lib/levels.ts';
 const base = new URL('/api/trails',process.env.TRAILS_BASE_URL || 'http://127.0.0.1:8787');
 async function post(action, session={}, extra={}) { const response=await fetch(base,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...session,...extra})}); return {status:response.status,data:await response.json()}; }
 async function get(session) { const u=new URL(base);u.searchParams.set('code',session.code);const response=await fetch(u,{headers:{'X-Trail-Token':session.token}});return {status:response.status,data:await response.json()}; }
@@ -74,5 +75,28 @@ const awayState=(await get(stuck)).data;
 assert.equal(awayState.players.find(p=>p.name==='Idle')?.active,false,'idle player is marked away');
 assert.ok(awayState.players.filter(p=>p.active).length >= 2,'active finishers remain after the idle window');
 assert.equal((await post('complete',stuck)).status,200,'away teammates must not block the portal');
+
+// New shared co-op systems: carryable object, held relay, and teammate rescue.
+const mechanicHost=(await post('create',{}, {name:'Mechanic Host',avatar:0})).data;
+const mechanicGuest=(await post('join',{}, {code:mechanicHost.code,name:'Mechanic Guest',avatar:1})).data;
+assert.equal((await post('start',mechanicHost,{level:0})).status,200);
+let mechanicState=(await get(mechanicHost)).data;
+const crate=mechanicState.crate;
+assert.equal((await post('move',mechanicHost,{x:crate.x-17,y:crate.y-22})).status,200);
+assert.equal((await post('carry',mechanicHost)).status,200,'a nearby explorer can pick up the Trail Crate');
+assert.equal((await post('move',mechanicHost,{x:1240,y:388})).status,200);
+mechanicState=(await get(mechanicGuest)).data;
+assert.equal(mechanicState.crate.carrier,0,'crate carrier synchronizes to teammates');
+assert.ok(mechanicState.crate.x > 1240,'carried crate moves with its explorer');
+const relay=layout(0).relaySwitch;
+assert.equal((await post('move',mechanicGuest,{x:relay.x-17,y:388})).status,200);
+assert.equal((await get(mechanicHost)).data.relayActive,true,'a teammate holding the relay powers the Harmony Step');
+assert.equal((await post('move',mechanicHost,{x:500,y:388})).status,200);
+assert.equal((await post('move',mechanicGuest,{x:510,y:388})).status,200);
+assert.equal((await post('fall',mechanicHost)).status,200);
+mechanicState=(await get(mechanicGuest)).data;
+assert.ok(mechanicState.players[0].downedUntil,'fallen explorers enter the shared downed state');
+assert.equal((await post('rescue',mechanicGuest,{targetIndex:0})).status,200,'nearby teammate can rescue a fallen explorer');
+assert.equal((await get(mechanicHost)).data.players[0].downedUntil,undefined,'rescue clears the downed state for every client');
 
 console.log('Tandem Trails smoke test passed: payload validation, structured errors, four-player capacity, roles, shared lights, gates, completion results, unlocks, replay, restart, reconnect, activity, and host transfer.');

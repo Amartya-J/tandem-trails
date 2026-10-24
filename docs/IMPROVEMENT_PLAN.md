@@ -81,7 +81,7 @@ This plan turns the current improvement ideas into a sequence of small, reviewab
 ## Phase 8: Testing and maintainability
 - [x] **8.1 Add level geometry tests**
 - [x] **8.2 Add API edge-case tests**
-- [ ] **8.3 Add browser tests**
+- [x] **8.3 Add browser tests** — Playwright covers the live landing flow, explorer selection, and room creation.
 - [x] **8.4 Add CI checks**
 - [x] **8.5 Split app/page.tsx**
 - [x] **8.6 Create shared game types and constants**
@@ -93,13 +93,13 @@ This plan turns the current improvement ideas into a sequence of small, reviewab
 - [x] **9.3 Add time trials** — Track best times and provide optional speed challenges.
 - [x] **9.4 Add no-fall and perfect-run challenges** — Offer additional goals without making the normal campaign harder.
 - [x] **9.5 Add Trail Twists** — Every run now rolls a shared, visible modifier: Moon Hop, Crosswind, or Quickstep.
-- [ ] **// Future: Cosmetics & Customization**
+- [x] **9.6 Cosmetics & Customization** — Players choose Scout, Spark, Echo, or Flare before creating or joining; the selection synchronizes across the room.
 
 ## Phase 10: New cooperative mechanics
 - [x] **10.1 Add timing-based cooperative platforms** — Harmony Step crossings appear only while linked and solidify on a shared rhythmic beat.
-- [ ] **10.2 Add carryable or movable objects**
-- [ ] **10.3 Add buttons that must be held while another player moves**
-- [ ] **10.4 Add rescue mechanics for fallen teammates**
+- [x] **10.2 Add carryable or movable objects** — The shared Trail Crate can be picked up with `E`, carried, dropped, and seen by every teammate.
+- [x] **10.3 Add buttons that must be held while another player moves** — The Relay Switch powers Harmony Step only while an active teammate remains on it.
+- [x] **10.4 Add rescue mechanics for fallen teammates** — A fall creates a shared downed state; a nearby teammate presses `R` to rescue before the fallback respawn.
 
 ## Phase 11: Browser platform and device quality
 - [x] **11.1 Unify pointer input**
@@ -111,12 +111,12 @@ This plan turns the current improvement ideas into a sequence of small, reviewab
 - [x] **11.7 Complete a WCAG 2.2 verification pass**
 
 ## Phase 12: Real-time multiplayer architecture
-- [ ] **12.1 Measure the current polling model**
-- [ ] **12.2 Decide room transport**
-- [ ] **12.3 Prototype authoritative room events**
+- [x] **12.1 Measure the current polling model** — The client measures real poll round-trip time and displays it in the connection indicator.
+- [x] **12.2 Decide room transport** — Retain client-predicted polling for this 2–4 player release; see `docs/MULTIPLAYER_ARCHITECTURE.md`.
+- [x] **12.3 Prototype authoritative room events** — The Worker writes a compact, authoritative history of joins, starts, pickups, and clears into every room snapshot.
 - [x] **12.4 Make state mutations atomic**
-- [ ] **12.5 Add versioned resynchronization**
-- [ ] **12.6 Load-test room limits**
+- [x] **12.5 Add versioned resynchronization** — Full authoritative snapshots include a protocol version and incompatible clients fail safely.
+- [x] **12.6 Load-test room limits** — A four-player, 240-operation concurrent load smoke test runs in CI.
 
 ## Phase 13: Security, privacy, and operational safeguards
 - [x] **13.1 Add response security headers**
@@ -138,9 +138,9 @@ This plan turns the current improvement ideas into a sequence of small, reviewab
 - [x] **14.2 Implement "The Celebration Engine"** — Add world-aware particles, screen shake on impact, and a victory fanfare to the results screen.
 - [x] **14.3 Add a "Guided First Trail"** — Improve onboarding for new players.
 - [x] **14.4 Implement "The Sync Link"** — Create a distance-based solidarity mechanic where platforms only solidify when players are close.
-- [ ] **14.5 Final Review** — Audit against the 1-5 scoring guide to ensure "Exceeds Requirements" (5).
+- [x] **14.5 Final Review** — Re-audited October 24 after explorer customization, new shared co-op systems, browser coverage, load testing, and versioned resynchronization.
 
 ## Phase 15: Final Submission
-- [ ] **15.1 Create Project Cover Image**
-- [ ] **15.2 Write Project Description**
+- [x] **15.1 Create Project Cover Image** — `showcase-cover.png` is a verified 1200 × 800 cover image.
+- [x] **15.2 Write Project Description** — The 446-character submission description is ready in `SUBMISSION.md`.
 - [ ] **15.3 Final Deployment & URL verification**

@@ -75,7 +75,7 @@ export default function GameCanvas({ index, room, heroRef, cameraRef, shakeRef, 
     let frame: number;
     const render = (now: number) => {
       const time = now / 1000;
-      const { level, gaps, platforms, shards, hazards, optional, syncBridge, tempoBridge } = layout(index);
+      const { level, gaps, platforms, shards, hazards, optional, syncBridge, tempoBridge, relaySwitch, trailCrate } = layout(index);
       const world = WORLDS[level.world];
       const twist = room?.trailTwist as keyof typeof TRAIL_TWISTS | undefined;
       const scale = Number(canvas.dataset.pixelRatio || 1);
@@ -193,7 +193,7 @@ export default function GameCanvas({ index, room, heroRef, cameraRef, shakeRef, 
       ctx.font = "800 9px Arial";
       ctx.textAlign = "center";
       ctx.fillText(syncLinked ? "SYNC BRIDGE" : "LINK TO REVEAL", syncBridge.x + syncBridge.w / 2, syncBridge.y - 13);
-      const tempoActive = syncLinked && isTempoBridgeActive(tempoBridge, time);
+      const tempoActive = syncLinked && !!room?.relayActive && isTempoBridgeActive(tempoBridge, time);
       const tempoPulse = (time % tempoBridge.period) / tempoBridge.period;
       ctx.save();
       ctx.globalAlpha = tempoActive ? .95 : .18;
@@ -216,7 +216,7 @@ export default function GameCanvas({ index, room, heroRef, cameraRef, shakeRef, 
       ctx.fillStyle = tempoActive ? "#fff4b5" : "#c1d0d2";
       ctx.font = "800 9px Arial";
       ctx.textAlign = "center";
-      ctx.fillText(tempoActive ? "HARMONY STEP · GO!" : syncLinked ? "HARMONY STEP · WAIT FOR BEAT" : "HARMONY STEP · LINK UP", tempoBridge.x + tempoBridge.w / 2, tempoBridge.y - 13);
+      ctx.fillText(tempoActive ? "HARMONY STEP · GO!" : !room?.relayActive ? "HARMONY STEP · HOLD RELAY" : syncLinked ? "HARMONY STEP · WAIT FOR BEAT" : "HARMONY STEP · LINK UP", tempoBridge.x + tempoBridge.w / 2, tempoBridge.y - 13);
       for (const x of hazards) {
         const wobble = Math.sin(time * 3 + x) * 2; ctx.save(); ctx.translate(x, FLOOR - 10 + wobble);
         ctx.fillStyle = "#101b2e"; ctx.strokeStyle = world.accent; ctx.lineWidth = 2;
@@ -244,6 +244,24 @@ export default function GameCanvas({ index, room, heroRef, cameraRef, shakeRef, 
         ctx.fill();
         ctx.restore();
       });
+
+      const crate = room?.crate || { ...trailCrate, carrier: undefined };
+      ctx.save();
+      ctx.translate(crate.x, crate.y);
+      ctx.fillStyle = "#74472d";
+      ctx.fillRect(-12, -12, 24, 24);
+      ctx.strokeStyle = "#ffd980";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-10, -10, 20, 20);
+      ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(10, 10); ctx.moveTo(10, -10); ctx.lineTo(-10, 10); ctx.stroke();
+      ctx.fillStyle = "#fff0b5"; ctx.font = "800 8px Arial"; ctx.textAlign = "center";
+      ctx.fillText(crate.carrier === undefined ? "TRAIL CRATE · E" : "CARRIED", 0, -20);
+      ctx.restore();
+
+      const relayHeld = !!room?.relayActive;
+      roundRect(ctx, relaySwitch.x - 24, FLOOR - 8, 48, 8, 3, relayHeld ? world.accent : "#b9c2cf");
+      ctx.fillStyle = relayHeld ? "#fff4b5" : "#c1d0d2"; ctx.font = "700 9px sans-serif"; ctx.textAlign = "center";
+      ctx.fillText(relayHeld ? "RELAY HELD" : "RELAY", relaySwitch.x, FLOOR - 18);
 
       PLATES.forEach((x, i) => {
         const on = !!room?.gateOpen || !!room?.players.some((p: Player) => p.active !== false && p.x + 17 > x - 26 && p.x + 17 < x + 26 && p.y > 360);
@@ -308,14 +326,14 @@ export default function GameCanvas({ index, room, heroRef, cameraRef, shakeRef, 
 
       if (room) room.players.forEach((player: Player, i: number) => {
         const local = i === room.meIndex;
-        if (local) avatar(ctx, hero.x, hero.y, i, player.name, true, time, hero.vx, hero.vy);
+        if (local) avatar(ctx, hero.x, hero.y, player.avatar ?? i, player.name, true, time, hero.vx, hero.vy);
         else {
           const prev = remotesRef.current.get(i) || { x: player.x, y: player.y };
           const oldX = prev.x;
           prev.x += (player.x - prev.x) * .22;
           prev.y += (player.y - prev.y) * .22;
           remotesRef.current.set(i, prev);
-          avatar(ctx, prev.x, prev.y, i, player.name, false, time, (prev.x - oldX) * 30, player.y - prev.y);
+          avatar(ctx, prev.x, prev.y, player.avatar ?? i, player.name, false, time, (prev.x - oldX) * 30, player.y - prev.y);
         }
       });
       else avatar(ctx, 96, 388, 0, "", true, time);

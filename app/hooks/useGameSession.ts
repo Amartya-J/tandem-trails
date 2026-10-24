@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { type Room, type Session, NETWORK_POLL_MS } from "@/lib/game-types";
+import { ROOM_STATE_VERSION, type Room, type Session, NETWORK_POLL_MS } from "@/lib/game-types";
 
 type ApiResult = { room?: Room; notice?: string; error?: string; session?: Session; latency?: number };
 
@@ -11,6 +11,13 @@ async function readApiResult(response: Response): Promise<ApiResult> {
 
 function messageOf(error: unknown) {
   return error instanceof Error ? error.message : "Trail request failed";
+}
+
+function assertCompatibleRoom(room: Room) {
+  if (room.stateVersion !== ROOM_STATE_VERSION) {
+    throw new Error("This trail room needs a refresh before it can be safely synchronized");
+  }
+  return room;
 }
 
 export function useGameSession() {
@@ -38,7 +45,7 @@ export function useGameSession() {
         }),
       });
       const data = await readApiResult(res);
-      if (data.room) setState(data.room);
+      if (data.room) setState(assertCompatibleRoom(data.room));
       if (data.notice) setNotice(data.notice);
       if (data.error) setError(data.error);
       return data;
@@ -50,7 +57,7 @@ export function useGameSession() {
     }
   }, []);
 
-  const enter = async (mode: "create" | "join", payload: { name: string; code: string }) => {
+  const enter = async (mode: "create" | "join", payload: { name: string; code: string; avatar: number }) => {
     setBusy(true);
     try {
       const res = await fetch(`/api/trails`, {
@@ -66,7 +73,7 @@ export function useGameSession() {
       sessionRef.current = session;
       setSession(session);
       localStorage.setItem("tandem-session", JSON.stringify(session));
-      setState(room);
+      setState(assertCompatibleRoom(room));
     } catch (error: unknown) {
       setError(messageOf(error));
       throw error;
@@ -101,6 +108,7 @@ export function useGameSession() {
   useEffect(() => {
     const poll = async () => {
       if (!sessionRef.current) return;
+      const startedAt = performance.now();
       try {
         const res = await fetch(`/api/trails`, {
           method: "POST",
@@ -110,10 +118,10 @@ export function useGameSession() {
             session: sessionRef.current,
           }),
         });
-        const { room, latency } = await readApiResult(res);
+        const { room } = await readApiResult(res);
         if (!room) throw new Error("Trail room response was incomplete");
-        setState(room);
-        setLatencyMs(typeof latency === "number" ? latency : null);
+        setState(assertCompatibleRoom(room));
+        setLatencyMs(Math.round(performance.now() - startedAt));
         setConnState("connected");
       } catch {
         setConnState("reconnecting");

@@ -1,0 +1,56 @@
+# My Bio
+
+# DEVELOPER DOSSIER: AMARTYA JAMI
+
+### PROJECT & RESEARCH HIGHLIGHTS
+* **Ocunetra | AI Retinal-Screening Project** — Developer[cite: 1]
+  * Designed a low-cost smartphone retinal-screening prototype and built an AI imaging model to analyze retinal scans for underserved communities[cite: 1].
+    * Secured project funding and conducted product testing[cite: 1].
+      * Built a responsive website, interactive hardware and subscription pricing calculator, and user contact flows[cite: 1].
+        * Won the Congressional App Challenge (TX-31) and selected among the Blue Ocean Top 100 pitches[cite: 1].
+
+        * **Pro Swimming** — Founder & Instructor[cite: 1]
+          * Founded and operated a swim instruction business, teaching 20–30 students and generating $3,000 in revenue[cite: 1].
+            * Managed client relationships, payment tracking, and business software operations[cite: 1].
+
+            * **Igntiv** — Audio & AI Content Intern[cite: 1]
+              * Researched and scripted podcasts covering AI and agentic commerce with retail tech professionals[cite: 1].
+                * Handled audio editing, sound quality management, and publishing workflows[cite: 1].
+
+                ---
+
+                ### LEADERSHIP & ACHIEVEMENTS
+                * **Finance Forward** — Founder[cite: 1]
+                  * Established a nonprofit initiative organizing community financial literacy workshops and outreach[cite: 1].
+                    * Documented community impact through a written DECA project submission[cite: 1].
+
+                    * **Boy Scouts of America** — Senior Patrol Leader[cite: 1]
+                      * Led operations, meetings, and community service projects for over 40 scouts[cite: 1].
+                        * Designed and directed an Eagle Scout construction, fundraising, and planning project for a local serving center[cite: 1].
+
+                        * **DECA** — International Competitor[cite: 1]
+                          * Competed in PMFL and advanced to the International Career Development Conference (ICDC)[cite: 1].
+
+                          * **Community Service**[cite: 1]
+                            * Completed 300+ volunteer hours and earned two Gold Presidential Volunteer Service Awards[cite: 1].
+
+                            ---
+
+                            ### SKILL MATRIX & CERTIFICATIONS
+                            * **Technical & Creative:** Python, Excel, Financial Modeling (DCF, LBO), Canva, Audio Editing, Adobe Photoshop, Adobe Illustrator[cite: 1]
+                            * **Business & Operations:** Client Management, Payment Tracking, Google Analytics CInvestment Banking & Management Simulations (Bank of America, Fidelity)[cite: 1]
+
+                            * **Languages Spoken:** English, Telugu, Spanish, Hindi, French[cite: 1]
+______
+
+1. Technology and my future
+Technology will play a major role in the future I imagine for myself because it will affect how I learn, create, communicate, and work. In education, I want to use online courses, digital libraries, tutoring apps, and AI tools to study subjects that interest me beyond what I learn in class. For example, if I wann coding, graphic design, engineering, or another language, I can find lessons and practice projects online. Technology can also help me organize assignments, research reliable information, and work with classmates on shared documents.
+My hobbies will also involve technology. I am interested in exploring video editing, digital art, photography, music production, and gaming. I could use creative programs to turn ideas into videos, drawings, songs, or small games. I also like that technology lets people share their work and receive feedback from others who have similar interests.
+In my future career, I hope to use technology to solve practical problems. I may work in a field such as engineering, business, health care, design, or computer science. No matter which path I choose, I will need to understand digital tools and learn new ones as they change. Technology could help me connect with mentors, apply for opportunities, collaborate with teams in other places, and build projects that help my community. I do not see technology as replacing effort or creativity. I see it as a tool that can help me learn faster, express ideas, and make a useful contribution.
+2. A real-world problem and technology solution
+A real-world problem I care about is food waste. Grocery stores, restaurants, and cafeterias throw away food that is still safe to eat, while many families struggle to afford enough healthy meals. I would build an app called FoodLink to connect businesses with extra food to food banks, shelters, community organizations, and families nearby.
+Businesses could post photos of extra meals, produce, bread, or packaged food before it expires. Each post would include the pickup deadline, quantity, ingredients, allergens, storage requirements, and location. The app would first notify local food banks and shelters because they can distribute large amounts of food. If no organization can accept the donation, the app could offer pickup slots to verified community members. Volunteers could use the app to deliver food to people who do not have transportation.
+FoodLink would use location services to find the closest available pickup option and reduce travel time. It could also predict when businesses are likely to have extra food based on past donations. For example, a bakery may have extra bread at the end of each day, while a restaurant may have extra prepared meals after an event. The app could send reminders before food expires and help businesses track how much food they donate.
+I would work with food safety experts, local stores, and community organizations while building it. My goal would be to make donating food simple for businesses and make healthy food easier for families to access. This solution could reduce landfill waste, lower hunger, and strengthen connections between local organizations.
+3. Keeping the technology safe and fair
+I would make FoodLink safe, fair, and helpful by involving the people who would use it from the beginning. I would meet with food ba

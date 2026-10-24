@@ -5,6 +5,7 @@ export const MAX_PLAYERS = 4;
 export const MIN_PLAYERS = 2;
 export const NETWORK_POLL_MS = 220;
 export const POSITION_SEND_MS = 150;
+export const ROOM_STATE_VERSION = 1;
 
 export const TRAIL_TWISTS = {
   "moon-hop": { label: "MOON HOP", icon: "☾", description: "Low gravity turns every leap into a long, floaty arc." },
@@ -24,10 +25,15 @@ export type Player = {
   x: number;
   y: number;
   color: number;
+  /** Selected explorer appearance. Stored in room state so every device agrees. */
+  avatar?: number;
   isHost: boolean;
   lastSeen?: number;
   active?: boolean;
+  downedUntil?: number;
 };
+
+export type TrailCrate = { x: number; y: number; carrier?: number };
 
 export type PlayerState = Player;
 
@@ -40,7 +46,14 @@ export type Completion = {
   newlyUnlocked: number;
 };
 
+export type RoomEvent = {
+  type: "crew-joined" | "trail-started" | "light-collected" | "gate-opened" | "trail-cleared";
+  actor?: string;
+  at: number;
+};
+
 export type Room = {
+  stateVersion: number;
   code: string;
   phase: "lobby" | "active" | "finished";
   level: number;
@@ -50,11 +63,14 @@ export type Room = {
   collected: number;
   optionalCollected: number;
   gateOpen: boolean;
+  relayActive: boolean;
+  crate: TrailCrate;
   isHost: boolean;
   meIndex: number;
   playerCount: number;
   players: Player[];
   completion: Completion | null;
+  events: RoomEvent[];
 };
 
 export type RoomState = Room;

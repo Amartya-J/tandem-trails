@@ -18,6 +18,7 @@ export default function Home() {
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [avatar, setAvatar] = useState(0);
   const [selected, setSelected] = useState(0);
   const [muted, setMuted] = useState(sounds.isMuted());
   const [musicVol, setMusicVol] = useState(sounds.getMusicVolume());
@@ -51,6 +52,8 @@ export default function Home() {
     (index: number) => void action("collectOptional", { index }),
     () => void action("complete", { seconds: startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current) / 1000) : Math.max(1, elapsed) }),
     () => void action("fall"),
+    () => void action("carry"),
+    (targetIndex: number) => void action("rescue", { targetIndex }),
     setAnnouncement
   );
 
@@ -89,7 +92,7 @@ export default function Home() {
 
   const handleEnter = async (mode: "create" | "join") => {
     try {
-      await enter(mode, { name, code });
+      await enter(mode, { name, code, avatar });
     } catch {
       setError("Failed to enter trail");
     }
@@ -136,7 +139,7 @@ export default function Home() {
   const currentLevel = LEVELS[state?.level ?? selected];
   const world = WORLDS[currentLevel.world];
   const lightsCollected = state ? [0, 1, 2, 3].filter(index => state.collected & (1 << index)).length : 0;
-  const optionalsCollected = state ? [0, 1, 2, 3].filter(index => state.optionalCollected & (1 << index)).length : 0;
+  const optionalsCollected = state ? [0, 1].filter(index => state.optionalCollected & (1 << index)).length : 0;
   const activeCrew = state?.players.filter(player => player.active !== false) ?? [];
   const portalCrew = activeCrew.length >= 2 ? activeCrew : (state?.players ?? []);
   const playersAtPortal = portalCrew.filter(player => player.x + 17 >= 1857 - 45 && player.y <= 410).length;
@@ -165,7 +168,7 @@ export default function Home() {
           <Link href="/trail-journal" className="nav-link">JOURNAL</Link>
           <Link href="/bio" className="nav-link">BIO</Link>
           <Link href="/account" className="nav-link">ACCOUNT</Link>
-          {session && <span className={`conn-indicator ${connState}${latencyMs !== null && latencyMs > 700 && connState === "connected" ? " laggy" : ""}`}>● {connState.toUpperCase()}</span>}
+          {session && <span className={`conn-indicator ${connState}${latencyMs !== null && latencyMs > 700 && connState === "connected" ? " laggy" : ""}`}>● {connState.toUpperCase()}{latencyMs !== null && connState === "connected" ? ` · ${latencyMs}MS` : ""}</span>}
           <button className="audio-toggle-btn" onClick={() => setMuted(sounds.toggleMute())}>{muted ? "🔇 SOUND OFF" : "🔊 SOUND ON"}</button>
           <span>4 PAINTED WORLDS</span>
           <strong>2–4 PLAYERS · ONLINE CO-OP</strong>
@@ -251,6 +254,7 @@ export default function Home() {
             <span style={{ marginLeft: '1rem', color: world.accent }}>✨ {optionalsCollected} COLLECTED</span>
             <span style={{ marginLeft: '1rem', fontWeight: 'bold', color: '#fff' }}>⏱ {formatTime(elapsed)}</span>
             <span className={`sync-status ${syncLinked ? "linked" : ""}`}>⚡ SYNC LINK · {syncLinked ? "BRIDGE LIVE" : "STAY CLOSE"}</span>
+            <span style={{ marginLeft: '1rem' }}>{state?.relayActive ? "RELAY HELD · HARMONY STEP LIVE" : "HOLD RELAY TO POWER HARMONY STEP"}</span>
             {trailTwist && <span className="ui-badge ui-badge-outline ui-badge-sm trail-twist-status">{trailTwist.icon} TWIST · {trailTwist.label}</span>}
             <span style={{ marginLeft: '1rem' }}>{state?.gateOpen ? "GATE OPEN · GATHER AT THE PORTAL" : "HOLD SWITCHES A + B TOGETHER"}</span>
             <span style={{ marginLeft: '1rem' }}>{playersAtPortal}/{portalNeeded} READY · TRAIL {(state?.level ?? selected) + 1}/16</span>
@@ -263,6 +267,12 @@ export default function Home() {
               <h2 className="entry-heading">Create or join an adventure</h2>
               <label htmlFor="player-name">YOUR NAME</label>
               <input className="ui-input" id="player-name" maxLength={20} value={name} onChange={e => setName(e.target.value)} />
+              <label>CHOOSE YOUR EXPLORER</label>
+              <div className="avatar-picker" role="radiogroup" aria-label="Choose your explorer">
+                {["SCOUT", "SPARK", "ECHO", "FLARE"].map((label, index) => (
+                  <button key={label} type="button" className={avatar === index ? "selected" : ""} role="radio" aria-checked={avatar === index} onClick={() => setAvatar(index)}>{label}</button>
+                ))}
+              </div>
               <button className="ui-btn main-button" disabled={busy || !name.trim()} onClick={() => handleEnter("create")}>
                 {busy ? "OPENING ROOM…" : "CREATE A ROOM"} →
               </button>
@@ -305,7 +315,7 @@ export default function Home() {
                       </div>
                       <div className="challenge-ribbons" aria-label="Run challenges">
                         {(state?.completion?.falls ?? 0) === 0 && <span>✦ FLAWLESS RUN</span>}
-                        {(state?.completion?.fireflies ?? 0) === 3 && <span>✦ LANTERN KEEPER</span>}
+                        {(state?.completion?.fireflies ?? 0) === 2 && <span>✦ LANTERN KEEPER</span>}
                       </div>
                     </div>
                   </div>
@@ -355,7 +365,7 @@ export default function Home() {
                 <p className="panel-tag">THE CREW <span>{state?.playerCount ?? 0}/4</span></p>
                 {state?.players.map((player, index) => (
                   <div className={`crew-row ${player.active === false ? "crew-away" : ""}`} key={index}>
-                    <i className={`crew-portrait crew-${index % 4}`} style={{background: ["#fff172", "#ff8fb0", "#8cf2e4", "#c6a1ff"][index % 4]}} />
+                    <i className={`crew-portrait crew-${player.avatar ?? index % 4}`} style={{background: ["#fff172", "#ff8fb0", "#8cf2e4", "#c6a1ff"][(player.avatar ?? index) % 4]}} />
                     <span><strong>P{index + 1}</strong> · {player.name}</span>
                     {index === state.meIndex && !editingName && state.phase === "lobby" && <button className="rename-btn" onClick={() => { setEditingName(true); setNewName(player.name); }}>✎</button>}
                     <small>{player.active === false ? "AWAY" : player.isHost ? "HOST" : "PLAYER"}</small>
@@ -383,7 +393,7 @@ export default function Home() {
           <Link href="/trail-journal#mechanics-heading" className="social-btn">MECHANICS GUIDE ↗</Link>
         </div>
         <details className="rules"><summary>HOW TO PLAY <span>+</span></summary><ol><li>Create a room and invite 1–3 people.</li><li>Move with arrows/A D; jump with Space.</li><li>Find four lights and open the gate together.</li><li>Everyone reach the portal to clear.</li></ol></details>
-        <div className="controls-hint">← → / A D RUN · SPACE / ↑ JUMP · <button className="pref-toggle-btn" onClick={() => setTouchLayout(t => t === "standard" ? "left-handed" : "standard")}>🖐 Touch: {touchLayout}</button></div>
+        <div className="controls-hint">← → / A D RUN · SPACE / ↑ JUMP · E CARRY / DROP · R RESCUE · <button className="pref-toggle-btn" onClick={() => setTouchLayout(t => t === "standard" ? "left-handed" : "standard")}>🖐 Touch: {touchLayout}</button></div>
       </div>
       {state?.phase === "active" && (
         <div className={`touch-controls ${touchLayout}`}>

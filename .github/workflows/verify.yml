@@ -36,6 +36,9 @@ jobs:
           done
           cat /tmp/tandem-trails-server.log
           exit 1
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - run: npm run test:load
       - run: npm run test:smoke
       - run: npm run test:campaign
       - run: npm run test:auth
