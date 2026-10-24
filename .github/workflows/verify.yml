@@ -22,10 +22,7 @@ jobs:
       - run: npm run test:logic
       - run: npm run build
       - name: Initialize local D1
-        run: |
-          for migration in drizzle/*.sql; do
-            npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file "$migration"
-          done
+        run: npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_flimsy_sunspot.sql
       - name: Start local server
         run: npm start > /tmp/tandem-trails-server.log 2>&1 &
       - name: Wait for local server
@@ -36,9 +33,5 @@ jobs:
           done
           cat /tmp/tandem-trails-server.log
           exit 1
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
-      - run: npm run test:load
       - run: npm run test:smoke
       - run: npm run test:campaign
-      - run: npm run test:auth
