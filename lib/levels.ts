@@ -4,24 +4,24 @@ export const PLATES = [1700, 1800] as const;
 export const EXIT_X = 1920;
 
 export const WORLDS = [
-  { name: "Sunleaf Wilds", short: "SUNLEAF", tagline: "A forest that bounces back.", sky: "#153b42", far: "#40776d", near: "#34836b", ground: "#102f30", accent: "#fff36e", hazard: "thorns" },
-  { name: "Brass Carnival", short: "BRASS", tagline: "Keep time with the turning fair.", sky: "#342640", far: "#976775", near: "#aa6b76", ground: "#211e35", accent: "#ffe07a", hazard: "gears" },
-  { name: "Tideglass Reefs", short: "TIDEGLASS", tagline: "Ride the gentle current.", sky: "#133c58", far: "#4188a0", near: "#328e9a", ground: "#112d40", accent: "#ffe18a", hazard: "urchins" },
-  { name: "Cloudspire Sky", short: "CLOUDSPIRE", tagline: "Leap into the updraft.", sky: "#272e58", far: "#767cae", near: "#777db3", ground: "#1c2545", accent: "#ffe77a", hazard: "storm orbs" },
+  { name: "Hollowwood", short: "HOLLOWWOOD", tagline: "Something old is waking beneath the roots.", sky: "#100f1f", far: "#302a4a", near: "#3b3152", ground: "#14101f", accent: "#ff9b45", hazard: "thorned shadows" },
+  { name: "The Last Midway", short: "MIDWAY", tagline: "The rides keep turning after the lights go out.", sky: "#1a1020", far: "#4c2445", near: "#6f2e4c", ground: "#170b19", accent: "#ff6b3d", hazard: "rusted gears" },
+  { name: "Drownlight Depths", short: "DROWNLIGHT", tagline: "Do not follow the lights beneath the black water.", sky: "#071827", far: "#163a4b", near: "#1c5963", ground: "#07131d", accent: "#78f1d0", hazard: "grave urchins" },
+  { name: "Witchwire Heights", short: "WITCHWIRE", tagline: "A storm is stitching the sky shut.", sky: "#151229", far: "#383052", near: "#54446f", ground: "#0d0b1a", accent: "#d4a0ff", hazard: "watcher orbs" },
 ] as const;
 
 const NAMES = [
-  ["First Flight", "Mushroom Mile", "Canopy Chase", "Bloom Gate"],
-  ["Clockwork Entry", "Pinwheel Path", "Midnight Midway", "The Great Wheel"],
-  ["Glasswater Run", "Coral Lift", "Current Crossing", "Pearl Passage"],
-  ["Above the Bells", "Starfall Steps", "Gale Arcade", "Skyline Finale"],
+  ["Whispering Roots", "Mothcap Mile", "The Crooked Canopy", "The Blooming Door"],
+  ["After-Hours Entry", "Deadman’s Midway", "Carousel of Teeth", "The Great Unmaking"],
+  ["Blackwater Run", "The Sunken Lift", "Current of the Lost", "The Pearl Below"],
+  ["Bells at Midnight", "Static Steps", "Gale of the Witches", "The Last Signal"],
 ] as const;
 
 const BRIEFINGS = [
-  ["Follow the first lights through the treetops.", "Use the springy mushrooms to cross the wide gaps.", "Keep the crew together beneath the high canopy.", "Gather every light before the forest gate opens."],
-  ["The fairground starts gently. Watch for the gears.", "Time your jumps as the midway turns around you.", "Stay close to your crew through the late-night lights.", "Take one last lap before the great wheel."],
-  ["The reef glows below. Follow the lights across the water.", "Let the current carry you up to the next platform.", "Find a rhythm together through the crossing.", "Bring all four lights to the pearl passage."],
-  ["The sky path begins above the bells.", "Use the updraft to climb toward the stars.", "Keep moving when the wind picks up.", "Reach the final portal together above the clouds."],
+  ["Follow the lanterns before the forest notices you.", "Use the swollen mothcaps to cross the hollow gaps.", "Stay close beneath the branches that bend toward voices.", "Gather every ember before the root-door opens."],
+  ["The fairground has been closed for years. The gears disagree.", "Time your jumps while the midway turns itself.", "Do not split up under the dead bulbs.", "Take one last lap before the wheel sees you."],
+  ["The water reflects someone who is not in your crew.", "Let the current lift you above the drowned halls.", "Keep a shared rhythm through the undertow.", "Bring all four embers to the pearl below."],
+  ["The bells ring even when nobody pulls the rope.", "Use the updraft before the static swallows it.", "Keep moving when the witches' wind arrives.", "Reach the final signal together above the storm."],
 ] as const;
 
 export const LEVELS = NAMES.flatMap((names, world) => names.map((name, stage) => ({ name, briefing: BRIEFINGS[world][stage], world, stage, index: world * 4 + stage })));

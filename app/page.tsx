@@ -163,15 +163,15 @@ export default function Home() {
   return (
     <main className={`shell ${session ? "in-room" : "at-title"} ${state?.phase === "active" ? "is-playing" : ""}`}>
       <header className="topbar">
-        <Link className="brand" href="/"><span>✦</span> TANDEM TRAILS</Link>
+        <Link className="brand" href="/"><span>☾</span> TANDEM TRAILS: AFTER DARK</Link>
         <div className="header-right">
           <Link href="/trail-journal" className="nav-link">JOURNAL</Link>
           <Link href="/bio" className="nav-link">BIO</Link>
           <Link href="/account" className="nav-link">ACCOUNT</Link>
           {session && <span className={`conn-indicator ${connState}${latencyMs !== null && latencyMs > 700 && connState === "connected" ? " laggy" : ""}`}>● {connState.toUpperCase()}{latencyMs !== null && connState === "connected" ? ` · ${latencyMs}MS` : ""}</span>}
           <button className="audio-toggle-btn" onClick={() => setMuted(sounds.toggleMute())}>{muted ? "🔇 SOUND OFF" : "🔊 SOUND ON"}</button>
-          <span>4 PAINTED WORLDS</span>
-          <strong>2–4 PLAYERS · ONLINE CO-OP</strong>
+          <span>4 HAUNTED REALMS</span>
+          <strong>2–4 PLAYERS · SURVIVE TOGETHER</strong>
           <button className="audio-toggle-btn" onClick={() => setMenuOpen(true)}>☰ MENU <kbd>Esc</kbd></button>
         </div>
       </header>
@@ -224,10 +224,10 @@ export default function Home() {
 
       <div className="overview">
         <div className="hero-copy">
-          <p className="eyebrow">AN ORIGINAL CO-OP PLATFORM ADVENTURE</p>
-          <h1>Tandem<br/><em>Trails</em><span aria-hidden="true">✦</span></h1>
-          <p>Dash through a living storybook.<br/>Nobody gets left behind.</p>
-          <div className="hero-chips"><span>16 TRAILS</span><span>4 HEROES</span><span>1 CREW</span></div>
+          <p className="eyebrow">A CO-OP HORROR PLATFORMER</p>
+          <h1>Tandem<br/><em>Trails</em><span aria-hidden="true">☾</span></h1>
+          <p>The trail remembers every footstep.<br/>Stay together. Make it out before dawn.</p>
+          <div className="hero-chips"><span>16 HAUNTED RUNS</span><span>4 SEEKERS</span><span>1 SURVIVOR CREW</span></div>
         </div>
         <Image className="cast-art" src="/art/trailblazer-cast.png" width={1918} height={820} priority alt="Cast art" />
       </div>
@@ -235,7 +235,7 @@ export default function Home() {
       <div className="main-grid">
         <section className="stage-card">
           <div className="stage-header">
-            <span><i className="status-light"/> {state?.phase === "active" ? "TRAIL IN PROGRESS" : state?.phase === "finished" ? "TRAIL COMPLETE" : "STORYBOOK PREVIEW"}</span>
+            <span><i className="status-light"/> {state?.phase === "active" ? "NIGHT IN PROGRESS" : state?.phase === "finished" ? "NIGHT SURVIVED" : "AFTER DARK PREVIEW"}</span>
             <strong>{world.short} · {currentLevel.name.toUpperCase()}</strong>
           </div>
           <div className="canvas-wrap">

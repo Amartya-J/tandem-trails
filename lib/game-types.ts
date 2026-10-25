@@ -8,9 +8,9 @@ export const POSITION_SEND_MS = 150;
 export const ROOM_STATE_VERSION = 1;
 
 export const TRAIL_TWISTS = {
-  "moon-hop": { label: "MOON HOP", icon: "☾", description: "Low gravity turns every leap into a long, floaty arc." },
-  "crosswind": { label: "CROSSWIND", icon: "≋", description: "A playful gust bends airborne jumps back and forth." },
-  "quickstep": { label: "QUICKSTEP", icon: "✦", description: "The whole crew gets a little extra trail speed." },
+  "moon-hop": { label: "WITCH MOON", icon: "☾", description: "The moon loosens gravity and stretches every leap into a haunted arc." },
+  "crosswind": { label: "COLD DRAFT", icon: "≋", description: "An unseen draft bends airborne jumps back and forth." },
+  "quickstep": { label: "PANIC STEP", icon: "✦", description: "The whole crew runs faster when something is close behind." },
 } as const;
 
 export type TrailTwistId = keyof typeof TRAIL_TWISTS;

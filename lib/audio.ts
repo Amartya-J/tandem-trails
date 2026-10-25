@@ -116,20 +116,20 @@ class SoundManager {
     const playStep = () => {
       if (this.musicWorld !== world || !this.ctx || !this.musicGain) return;
       const patterns = [
-        [261.63, 329.63, 392, 329.63, 293.66, 349.23, 440, 349.23],
-        [146.83, 185, 220, 246.94, 164.81, 207.65, 246.94, 220],
-        [220, 277.18, 329.63, 369.99, 246.94, 311.13, 369.99, 329.63],
-        [392, 493.88, 587.33, 659.25, 440, 554.37, 659.25, 739.99],
+        [146.83, 174.61, 220, 196, 146.83, 164.81, 207.65, 174.61],
+        [110, 130.81, 155.56, 146.83, 116.54, 138.59, 164.81, 155.56],
+        [130.81, 155.56, 196, 174.61, 123.47, 146.83, 185, 164.81],
+        [164.81, 196, 233.08, 220, 155.56, 185, 220, 207.65],
       ] as const;
       const notes = patterns[world % patterns.length];
       const now = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      osc.type = world === 1 ? "triangle" : world === 2 ? "sine" : "sine";
+      osc.type = world === 1 ? "sawtooth" : world === 2 ? "triangle" : "sine";
       osc.frequency.setValueAtTime(notes[this.musicStep % notes.length], now);
       gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.65, now + 0.025);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+      gain.gain.linearRampToValueAtTime(0.38, now + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
       osc.connect(gain);
       gain.connect(this.musicGain);
       osc.start(now);
@@ -137,7 +137,7 @@ class SoundManager {
       this.musicStep += 1;
     };
     playStep();
-    this.musicTimer = window.setInterval(playStep, 480);
+    this.musicTimer = window.setInterval(playStep, 680);
   }
 
   public stopWorldMusic(): void {
@@ -155,9 +155,9 @@ class SoundManager {
       const gain = ctx.createGain();
       const now = ctx.currentTime;
 
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(150, now);
-      osc.frequency.exponentialRampToValueAtTime(440, now + 0.12);
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(190, now);
+      osc.frequency.exponentialRampToValueAtTime(285, now + 0.12);
 
       gain.gain.setValueAtTime(0.15, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
@@ -203,7 +203,7 @@ class SoundManager {
     const ctx = this.initCtx();
     if (!ctx) return;
     try {
-      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+      const notes = [261.63, 311.13, 369.99, 440]; // a lantern's uneasy rising glow
       notes.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -253,7 +253,7 @@ class SoundManager {
     const ctx = this.initCtx();
     if (!ctx) return;
     try {
-      const chords = [392.0, 523.25, 659.25]; // G4, C5, E5
+      const chords = [110, 130.81, 155.56, 196]; // low minor gate groan
       chords.forEach(freq => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -283,29 +283,29 @@ class SoundManager {
     const ctx = this.initCtx();
     if (!ctx) return;
     try {
-      // World-tuned victory arpeggio roots
+      // World-tuned survival stingers: minor, restrained, and a little uneasy.
       const worldRoots: Record<number, number[]> = {
-        0: [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98], // C major flourish
-        1: [587.33, 739.99, 880.00, 1174.66, 1479.98, 1760.00], // D major triumphant
-        2: [440.00, 554.37, 659.25, 880.00, 1108.73, 1318.51],  // A major crystalline
-        3: [659.25, 830.61, 987.77, 1318.51, 1661.22, 1975.53], // E major celestial
+        0: [146.83, 174.61, 220, 293.66, 220, 174.61],
+        1: [110, 130.81, 155.56, 220, 155.56, 130.81],
+        2: [130.81, 155.56, 196, 261.63, 196, 155.56],
+        3: [164.81, 196, 233.08, 329.63, 233.08, 196],
       };
 
       const notes = worldRoots[world % 4] || worldRoots[0];
       const now = ctx.currentTime;
       let offset = 0;
 
-      // Ascending arpeggio flourish
+      // A brief "you made it" pulse, not a triumphant fanfare.
       notes.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         const start = now + offset;
-        const dur = idx === notes.length - 1 ? 0.75 : 0.12;
+        const dur = idx === notes.length - 1 ? 0.55 : 0.16;
 
         osc.type = idx % 2 === 0 ? "triangle" : "sine";
         osc.frequency.setValueAtTime(freq, start);
 
-        gain.gain.setValueAtTime(0.18, start);
+        gain.gain.setValueAtTime(0.12, start);
         gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
 
         osc.connect(gain);
@@ -316,8 +316,7 @@ class SoundManager {
         offset += 0.09;
       });
 
-      // Sustained grand resolution chord at climax
-      const chordNotes = [notes[0] / 2, notes[2] / 2, notes[3], notes[5] || notes[3] * 1.5];
+      const chordNotes = [notes[0], notes[2], notes[3] / 2];
       const chordStart = now + offset - 0.02;
       chordNotes.forEach(freq => {
         const osc = ctx.createOscillator();
@@ -326,8 +325,8 @@ class SoundManager {
         osc.type = "sine";
         osc.frequency.setValueAtTime(freq, chordStart);
 
-        gain.gain.setValueAtTime(0.12, chordStart);
-        gain.gain.exponentialRampToValueAtTime(0.001, chordStart + 1.2);
+        gain.gain.setValueAtTime(0.08, chordStart);
+        gain.gain.exponentialRampToValueAtTime(0.001, chordStart + 1.5);
 
         osc.connect(gain);
         gain.connect(this.ensureSfxGain(ctx));

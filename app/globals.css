@@ -4,16 +4,16 @@
 
 :root {
   color-scheme: dark;
-  --color-base-100: #091c2a; --color-base-200: #102c39; --color-base-300: #1d4550; --color-base-content: #fff4d2;
-  --color-primary: #ffd85e; --color-primary-content: #152737; --color-secondary: #59d8c5; --color-secondary-content: #0b2630;
-  --color-accent: #f27d79; --color-accent-content: #2c1720; --color-neutral: #142b3b; --color-neutral-content: #f9f1d6;
-  --color-info: #76c9ee; --color-info-content: #09233a; --color-success: #8ce7aa; --color-success-content: #12331f;
-  --color-warning: #ffcf68; --color-warning-content: #39290c; --color-error: #ff8d82; --color-error-content: #401a1b;
+  --color-base-100: #110d18; --color-base-200: #1d1226; --color-base-300: #311833; --color-base-content: #fff0dc;
+  --color-primary: #ff9b45; --color-primary-content: #1d0d12; --color-secondary: #9d72dc; --color-secondary-content: #170f25;
+  --color-accent: #78e2c5; --color-accent-content: #071a1a; --color-neutral: #211426; --color-neutral-content: #fff0dc;
+  --color-info: #91b5f1; --color-info-content: #11152c; --color-success: #9cdfa5; --color-success-content: #0e2516;
+  --color-warning: #ffad52; --color-warning-content: #2d1605; --color-error: #ff7b8a; --color-error-content: #370a14;
   --radius-selector: 1rem; --radius-field: 1rem; --radius-box: 1.5rem; --size-selector: .25rem; --size-field: .25rem; --border: 1px; --depth: 1; --noise: 0;
-  font-family: "Trebuchet MS", "Avenir Next", Arial, sans-serif; color: #fff4d2; background: #071927;
+  font-family: "Trebuchet MS", "Avenir Next", Arial, sans-serif; color: #fff0dc; background: #0b0711;
 }
 * { box-sizing: border-box; }
-html { background: #071927; }
+html { background: #0b0711; }
 body { margin: 0; min-width: 320px; min-height: 100svh; }
 button, input { font: inherit; }
 button { cursor: pointer; }
@@ -21,11 +21,11 @@ button:disabled { opacity: .42; cursor: not-allowed; }
 button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid #fff09b; outline-offset: 4px; }
 
 .shell { min-height: 100svh; padding: 0 clamp(22px, 5vw, 82px); position: relative; isolation: isolate; overflow: hidden; }
-.shell::before { content: ""; position: absolute; inset: 0; z-index: -3; background: #123747 url('/art/trailhead.png') center/cover no-repeat; transform: scale(1.025); }
-.shell::after { content: ""; position: absolute; inset: 0; z-index: -2; pointer-events: none; background: radial-gradient(circle at 72% 26%, #ffe88324 0 2%, transparent 28%), linear-gradient(90deg, #061b2be8 0, #092739b8 38%, #09273946 67%, #061724a8 100%), linear-gradient(0deg, #061621db, transparent 44%); }
+.shell::before { content: ""; position: absolute; inset: 0; z-index: -3; background: #120d1c url('/art/haunted-trailhead.png') center/cover no-repeat; transform: scale(1.025); }
+.shell::after { content: ""; position: absolute; inset: 0; z-index: -2; pointer-events: none; background: radial-gradient(circle at 74% 18%, #e9d5ff20 0 2%, transparent 25%), linear-gradient(90deg, #09050feF 0, #120c1bd4 42%, #120c1b52 70%, #08040dc9 100%), linear-gradient(0deg, #09050feF, transparent 50%); }
 .topbar { min-height: 76px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #fff3bf2b; position: relative; z-index: 4; }
 .brand { color: #fff8dc; text-decoration: none; font-weight: 900; font-size: 12px; letter-spacing: 3px; text-shadow: 0 2px 8px #061625; }
-.brand span { color: #ffe26f; margin-right: 7px; }
+.brand span { color: #ff9b45; margin-right: 7px; text-shadow: 0 0 12px #ff7b3d; }
 .header-right { display: flex; align-items: center; gap: 18px; font-size: 9px; letter-spacing: 1.8px; color: #d8e6d2; }
 .header-right strong { color: #ffe9a7; font-weight: 700; }
 .conn-indicator { font-size: 8px; font-weight: 800; letter-spacing: 1px; padding: 3px 8px; border-radius: 999px; }
@@ -138,7 +138,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visibl
 .run-results p { margin: 0; color: #aee9cd; font-size: 10px; text-align: center; }
 .challenge-ribbons { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 13px; }
 .challenge-ribbons span { padding: 5px 8px; border: 1px solid #ffe36c8c; border-radius: 999px; color: #ffe78a; background: #5a401833; font-size: 8px; font-weight: 900; letter-spacing: .8px; }
-.status-light { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #76e8bd; box-shadow: 0 0 12px #76e8bd; animation: pulse 1.8s ease-in-out infinite; }
+.status-light { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #ff8a45; box-shadow: 0 0 12px #ff6b3d; animation: pulse 1.8s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .45; transform: scale(.78); } }
 .panel-tag { margin: 0; color: #9fd4c2; font-size: 8px; font-weight: 900; letter-spacing: 2px; }
 .room-code { margin: 8px 0 5px; color: #ffe26a; font: 900 40px/1 Georgia, serif; letter-spacing: 6px; text-shadow: 0 3px 0 #6f452e; }

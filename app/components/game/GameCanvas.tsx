@@ -107,8 +107,10 @@ export default function GameCanvas({ index, room, heroRef, cameraRef, shakeRef, 
       ctx.translate(shakeX, shakeY);
 
       const sky = ctx.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, world.sky); sky.addColorStop(.62, world.far); sky.addColorStop(1, world.ground); ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
-      const glow = ctx.createRadialGradient(w * .73, 125, 10, w * .73, 125, 260); glow.addColorStop(0, "#fff7c25c"); glow.addColorStop(.35, `${world.accent}22`); glow.addColorStop(1, "#e9f2c200"); ctx.fillStyle = glow; ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = "#fff6c9"; ctx.shadowColor = world.accent; ctx.shadowBlur = 28; ctx.beginPath(); ctx.arc(w * .73, 125, 24, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      const glow = ctx.createRadialGradient(w * .73, 125, 10, w * .73, 125, 260); glow.addColorStop(0, "#e8ddff50"); glow.addColorStop(.35, `${world.accent}20`); glow.addColorStop(1, "#e9f2c200"); ctx.fillStyle = glow; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "#e8ddff"; ctx.shadowColor = world.accent; ctx.shadowBlur = 28; ctx.beginPath(); ctx.arc(w * .73, 125, 24, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.fillStyle = "#120d20";
+      for (let bat = 0; bat < 7; bat++) { const bx = (bat * 113 + time * (12 + bat % 3 * 4)) % (w + 60) - 30, by = 70 + (bat * 37) % 120 + Math.sin(time * 3 + bat) * 6; ctx.beginPath(); ctx.moveTo(bx - 9, by); ctx.quadraticCurveTo(bx - 4, by - 7, bx, by); ctx.quadraticCurveTo(bx + 5, by - 7, bx + 10, by); ctx.quadraticCurveTo(bx + 4, by + 3, bx, by + 5); ctx.quadraticCurveTo(bx - 4, by + 3, bx - 9, by); ctx.fill(); }
       ctx.globalAlpha = .12; ctx.fillStyle = world.accent; ctx.beginPath(); ctx.ellipse(w * .2, 165, 250, 74, -.18, 0, 7); ctx.ellipse(w * .86, 300, 310, 85, .12, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
       for(let i=0;i<48;i++){ctx.globalAlpha=.25+(Math.sin(time*.6+i)+1)*.18;ctx.fillStyle=world.accent;ctx.beginPath();ctx.arc(((i*173-camera*.12)%w+w)%w,42+(i*61)%310, i%4===0?1.8:1,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
       ctx.save(); ctx.translate(-camera * .23, 0);
@@ -148,6 +150,9 @@ export default function GameCanvas({ index, room, heroRef, cameraRef, shakeRef, 
         else { ctx.fillRect(x + 15, 275, 68, 160); ctx.beginPath(); ctx.moveTo(x + 15, 275); ctx.lineTo(x + 49, 225); ctx.lineTo(x + 83, 275); ctx.fill(); }
       }
       ctx.restore(); ctx.globalAlpha = 1;
+      ctx.save();
+      const fog = ctx.createLinearGradient(0, h * .45, 0, h); fog.addColorStop(0, "#b8a8d818"); fog.addColorStop(.55, `${world.accent}12`); fog.addColorStop(1, "#07040d38"); ctx.fillStyle = fog;
+      for (let bank = 0; bank < 5; bank++) { const fx = ((bank * 240 - time * (16 + bank * 3)) % (w + 380)) - 180; ctx.globalAlpha = .25; ctx.beginPath(); ctx.ellipse(fx, 370 + bank * 21, 210, 28, 0, 0, Math.PI * 2); ctx.fill(); } ctx.restore();
       ctx.save(); ctx.translate(-camera, 0);
       for (let x = 0; x < WORLD_WIDTH; x += 20) if (isGround(x + 10, gaps)) {
         ctx.fillStyle = world.ground; ctx.fillRect(x, FLOOR, 21, h - FLOOR);
@@ -156,6 +161,7 @@ export default function GameCanvas({ index, room, heroRef, cameraRef, shakeRef, 
         ctx.fillStyle = "#00000020"; ctx.fillRect(x + 5, FLOOR + 19 + (x % 3) * 9, 10, 4);
         ctx.strokeStyle = world.near; ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+6,FLOOR);ctx.lineTo(x+3,FLOOR-7);ctx.moveTo(x+10,FLOOR);ctx.lineTo(x+13,FLOOR-10);ctx.stroke();
       }
+      const hauntedVignette = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .18, w / 2, h / 2, Math.max(w, h) * .72); hauntedVignette.addColorStop(0, "#00000000"); hauntedVignette.addColorStop(1, "#03010875"); ctx.fillStyle = hauntedVignette; ctx.fillRect(camera, 0, w, h);
       for(let i=0;i<34;i++){
         const x=50+i*59;if(!isGround(x,gaps))continue;
         ctx.strokeStyle=world.near;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,FLOOR);ctx.quadraticCurveTo(x-8,FLOOR-18,x-4,FLOOR-27);ctx.moveTo(x,FLOOR-8);ctx.quadraticCurveTo(x+9,FLOOR-29,x+13,FLOOR-21);ctx.stroke();
